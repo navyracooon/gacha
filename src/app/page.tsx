@@ -28,7 +28,12 @@ import {
   AccordionDetails
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { v4 as uuidv4 } from 'uuid';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type Prize = {
   id: string;
@@ -258,6 +263,85 @@ interface IndividualViewProps {
   setNewTargetName: React.Dispatch<React.SetStateAction<string>>;
 }
 
+const SortableTableRow: React.FC<{
+  prize: Prize;
+  totalAbs: number;
+  gachaType: GachaType;
+  updateGachaType: (gt: GachaType) => void;
+  deletePrize: (pid: string) => void;
+  updatePrize: (pid: string, newAbs: number) => void;
+}> = ({ prize, totalAbs, gachaType, updateGachaType, deletePrize, updatePrize }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: prize.id
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  };
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell sx={{ width: '100px' }}>
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'grab',
+            backgroundColor: 'transparent'
+          }}
+          {...attributes}
+          {...listeners}
+        >
+          <DragIndicatorIcon />
+        </Box>
+      </TableCell>
+      <TableCell>
+        <TextField
+          value={prize.name}
+          onChange={(e) => {
+            const newName = e.target.value;
+            const updatedPrizes = gachaType.prizes.map(p =>
+              p.id === prize.id ? { ...p, name: newName } : p
+            );
+            updateGachaType({ ...gachaType, prizes: updatedPrizes });
+          }}
+          fullWidth
+        />
+      </TableCell>
+      <TableCell>
+        <TextField
+          type="number"
+          value={prize.abs}
+          onChange={(e) => updatePrize(prize.id, parseFloat(e.target.value))}
+          fullWidth
+        />
+      </TableCell>
+      <TableCell>{totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}</TableCell>
+      <TableCell>
+        <TextField
+          type="number"
+          value={prize.limit !== undefined ? prize.limit : ''}
+          onChange={(e) => {
+            const newLimit = e.target.value === '' ? undefined : parseInt(e.target.value);
+            const updatedPrizes = gachaType.prizes.map(p =>
+              p.id === prize.id ? { ...p, limit: newLimit } : p
+            );
+            updateGachaType({ ...gachaType, prizes: updatedPrizes });
+          }}
+          fullWidth
+        />
+      </TableCell>
+      <TableCell>
+        <Button variant="outlined" color="error" onClick={() => deletePrize(prize.id)}>
+          削除
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 const IndividualView: React.FC<IndividualViewProps> = ({
   gachaType,
   updateGachaType,
@@ -299,6 +383,16 @@ const IndividualView: React.FC<IndividualViewProps> = ({
   const [newPrizeLimit, setNewPrizeLimit] = useState<string>('');
   const [newPrizeRel, setNewPrizeRel] = useState<string>('');
   const [customGachaCount, setCustomGachaCount] = useState<string>('1');
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      const oldIndex = gachaType.prizes.findIndex(p => p.id === active.id);
+      const newIndex = gachaType.prizes.findIndex(p => p.id === over.id);
+      const newPrizes = arrayMove(gachaType.prizes, oldIndex, newIndex);
+      updateGachaType({ ...gachaType, prizes: newPrizes });
+    }
+  };
 
   const addTarget = () => {
     if (!newTargetName.trim()) return;
@@ -426,16 +520,33 @@ const IndividualView: React.FC<IndividualViewProps> = ({
         <Typography variant="h5">新しい景品の追加</Typography>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={3}>
-            <TextField label="景品名" value={newPrizeName} onChange={(e) => setNewPrizeName(e.target.value)} fullWidth />
+            <TextField
+              label="景品名"
+              value={newPrizeName}
+              onChange={(e) => setNewPrizeName(e.target.value)}
+              fullWidth
+            />
           </Grid>
           <Grid item xs={12} sm={2}>
-            <TextField label="絶対確率 (%)" value={newPrizeAbs} onChange={(e) => handleNewPrizeAbsChange(e.target.value)} fullWidth />
+            <TextField
+              label="絶対確率 (%)"
+              type="number"
+              value={newPrizeAbs}
+              onChange={(e) => handleNewPrizeAbsChange(e.target.value)}
+              fullWidth
+            />
           </Grid>
           <Grid item xs={12} sm={2}>
             <TextField label="相対確率 (%)" value={newPrizeRel} InputProps={{ readOnly: true }} fullWidth />
           </Grid>
           <Grid item xs={12} sm={2}>
-            <TextField label="上限" value={newPrizeLimit} onChange={(e) => setNewPrizeLimit(e.target.value)} fullWidth />
+            <TextField
+              label="上限"
+              type="number"
+              value={newPrizeLimit}
+              onChange={(e) => setNewPrizeLimit(e.target.value)}
+              fullWidth
+            />
           </Grid>
           <Grid item xs={12} sm={3}>
             <Button variant="contained" onClick={addPrize} fullWidth>
@@ -447,52 +558,35 @@ const IndividualView: React.FC<IndividualViewProps> = ({
       <Box sx={{ my: 2 }}>
         <Typography variant="h5">景品設定</Typography>
         <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>景品名</TableCell>
-                <TableCell>絶対確率 (%)</TableCell>
-                <TableCell>相対確率 (%)</TableCell>
-                <TableCell>上限</TableCell>
-                <TableCell>操作</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {gachaType.prizes.map(prize => (
-                <TableRow key={prize.id}>
-                  <TableCell>{prize.name}</TableCell>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      value={prize.abs}
-                      onChange={(e) => updatePrize(prize.id, parseFloat(e.target.value))}
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={gachaType.prizes.map(p => p.id)} strategy={verticalListSortingStrategy}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ width: '100px' }} />
+                    <TableCell>景品名</TableCell>
+                    <TableCell>絶対確率 (%)</TableCell>
+                    <TableCell>相対確率 (%)</TableCell>
+                    <TableCell>上限</TableCell>
+                    <TableCell>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {gachaType.prizes.map(prize => (
+                    <SortableTableRow
+                      key={prize.id}
+                      prize={prize}
+                      totalAbs={totalAbs}
+                      gachaType={gachaType}
+                      updateGachaType={updateGachaType}
+                      deletePrize={deletePrize}
+                      updatePrize={updatePrize}
                     />
-                  </TableCell>
-                  <TableCell>
-                    {totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}
-                  </TableCell>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      value={prize.limit !== undefined ? prize.limit : ''}
-                      onChange={(e) => {
-                        const newLimit = e.target.value === '' ? undefined : parseInt(e.target.value);
-                        const updatedPrizes = gachaType.prizes.map(p =>
-                          p.id === prize.id ? { ...p, limit: newLimit } : p
-                        );
-                        updateGachaType({ ...gachaType, prizes: updatedPrizes });
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="outlined" color="error" onClick={() => deletePrize(prize.id)}>
-                      削除
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </SortableContext>
+          </DndContext>
         </TableContainer>
       </Box>
       <Box sx={{ my: 2 }}>
@@ -506,7 +600,9 @@ const IndividualView: React.FC<IndividualViewProps> = ({
               onChange={(e) => setSelectedTargetId(e.target.value)}
             >
               {targets.map(t => (
-                <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
+                <MenuItem key={t.id} value={t.id}>
+                  {t.name}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -514,7 +610,7 @@ const IndividualView: React.FC<IndividualViewProps> = ({
             対象者管理
           </Button>
         </Box>
-        <Dialog open={targetModalOpen} onClose={handleCloseTargetModal} fullWidth maxWidth="sm">
+        <Dialog open={targetModalOpen} onClose={() => setTargetModalOpen(false)} fullWidth maxWidth="sm">
           <DialogTitle>対象者管理</DialogTitle>
           <DialogContent>
             <Box sx={{ mt: 3 }}>
@@ -545,7 +641,7 @@ const IndividualView: React.FC<IndividualViewProps> = ({
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseTargetModal}>閉じる</Button>
+            <Button onClick={() => setTargetModalOpen(false)}>閉じる</Button>
           </DialogActions>
         </Dialog>
         <Grid container spacing={2} alignItems="center">
@@ -608,9 +704,7 @@ const IndividualView: React.FC<IndividualViewProps> = ({
                 <TableRow key={prize.id}>
                   <TableCell>{prize.name}</TableCell>
                   <TableCell>{prize.abs}</TableCell>
-                  <TableCell>
-                    {totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}
-                  </TableCell>
+                  <TableCell>{totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}</TableCell>
                   <TableCell>{aggregatedResults[prize.id] || 0}</TableCell>
                 </TableRow>
               ))}
@@ -702,9 +796,7 @@ const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
               <TableRow key={prize.id}>
                 <TableCell>{prize.name}</TableCell>
                 <TableCell>{prize.abs}</TableCell>
-                <TableCell>
-                  {totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}
-                </TableCell>
+                <TableCell>{totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}</TableCell>
                 <TableCell>{overallAgg[prize.id] || 0}</TableCell>
               </TableRow>
             ))}
@@ -771,9 +863,7 @@ const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
                       <TableRow key={prize.id}>
                         <TableCell>{prize.name}</TableCell>
                         <TableCell>{prize.abs}</TableCell>
-                        <TableCell>
-                          {totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}
-                        </TableCell>
+                        <TableCell>{totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}</TableCell>
                         <TableCell>{agg[prize.id] || 0}</TableCell>
                       </TableRow>
                     ))}
