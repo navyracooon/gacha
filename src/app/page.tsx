@@ -64,7 +64,6 @@ const Page = () => {
   const [newGachaTypeModalOpen, setNewGachaTypeModalOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'individual' | 'overall'>('individual');
 
-  // 対象者管理の状態（個別画面・全体画面で共有）
   const [targets, setTargets] = useState<Target[]>([{ id: 'none', name: 'なし' }]);
   const [selectedTargetId, setSelectedTargetId] = useState<string>('none');
   const [targetModalOpen, setTargetModalOpen] = useState<boolean>(false);
@@ -91,6 +90,17 @@ const Page = () => {
   useEffect(() => {
     localStorage.setItem('selectedGachaTypeId', selectedGachaTypeId);
   }, [selectedGachaTypeId]);
+
+  useEffect(() => {
+    const storedTargets = localStorage.getItem('targets');
+    if (storedTargets) {
+      setTargets(JSON.parse(storedTargets));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('targets', JSON.stringify(targets));
+  }, [targets]);
 
   const updateGachaType = (updated: GachaType) => {
     setGachaTypes(gachaTypes.map(gt => (gt.id === updated.id ? updated : gt)));
@@ -158,11 +168,9 @@ const Page = () => {
 
   return (
     <Container maxWidth="md">
-      {/* タイトル */}
       <Box sx={{ my: 2 }}>
         <Typography variant="h4">ガチャシミュレーター</Typography>
       </Box>
-      {/* ガチャの種類管理 */}
       <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
         <FormControl sx={{ flex: 1 }}>
           <InputLabel>ガチャの種類選択</InputLabel>
@@ -209,7 +217,6 @@ const Page = () => {
           <Button onClick={() => setNewGachaTypeModalOpen(false)}>閉じる</Button>
         </DialogActions>
       </Dialog>
-      {/* 個別／全体の切替ボタン */}
       <Box sx={{ my: 2, display: 'flex', justifyContent: 'center', gap: 1 }}>
         <Button variant={viewMode === 'individual' ? 'contained' : 'outlined'} onClick={() => setViewMode('individual')}>
           個別ガチャ
@@ -263,7 +270,6 @@ const IndividualView: React.FC<IndividualViewProps> = ({
   newTargetName,
   setNewTargetName
 }) => {
-  // 全体の操作履歴から各景品の出現数を算出（全対象者で共有）
   const globalCounts: { [prizeId: string]: number } = {};
   gachaType.prizes.forEach(prize => {
     globalCounts[prize.id] = 0;
@@ -274,7 +280,6 @@ const IndividualView: React.FC<IndividualViewProps> = ({
     }
   });
 
-  // 選択中対象者の操作履歴のみを集計
   const aggregatedResults = gachaType.prizes.reduce((acc, prize) => {
     acc[prize.id] = 0;
     return acc;
@@ -411,9 +416,12 @@ const IndividualView: React.FC<IndividualViewProps> = ({
     updateGachaType({ ...gachaType, operationHistory: updatedOps });
   };
 
+  const bulkUndoOperations = () => {
+    updateGachaType({ ...gachaType, operationHistory: [] });
+  };
+
   return (
     <Box>
-      {/* 景品追加フォーム */}
       <Box sx={{ my: 2 }}>
         <Typography variant="h5">新しい景品の追加</Typography>
         <Grid container spacing={2} alignItems="center">
@@ -436,7 +444,6 @@ const IndividualView: React.FC<IndividualViewProps> = ({
           </Grid>
         </Grid>
       </Box>
-      {/* 景品設定テーブル */}
       <Box sx={{ my: 2 }}>
         <Typography variant="h5">景品設定</Typography>
         <TableContainer component={Paper}>
@@ -462,9 +469,7 @@ const IndividualView: React.FC<IndividualViewProps> = ({
                     />
                   </TableCell>
                   <TableCell>
-                    {totalAbs > 0
-                      ? ((prize.abs / totalAbs) * 100).toFixed(2)
-                      : '0.00'}
+                    {totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}
                   </TableCell>
                   <TableCell>
                     <TextField
@@ -490,7 +495,6 @@ const IndividualView: React.FC<IndividualViewProps> = ({
           </Table>
         </TableContainer>
       </Box>
-      {/* ガチャ実行 */}
       <Box sx={{ my: 2 }}>
         <Typography variant="h5">ガチャを回す</Typography>
         <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -585,7 +589,6 @@ const IndividualView: React.FC<IndividualViewProps> = ({
           </Grid>
         </Grid>
       </Box>
-      {/* 個別結果：集計結果 */}
       <Box sx={{ my: 2 }}>
         <Typography variant="h5">
           集計結果（対象者：{targets.find(t => t.id === selectedTargetId)?.name || 'なし'}）
@@ -615,13 +618,19 @@ const IndividualView: React.FC<IndividualViewProps> = ({
           </Table>
         </TableContainer>
       </Box>
-      {/* 操作履歴（個別対象者共通） */}
       <Box sx={{ my: 2 }}>
         <Typography variant="h5">操作履歴</Typography>
+        {gachaType.operationHistory.length > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, mb: 1 }}>
+            <Button variant="outlined" color="error" onClick={bulkUndoOperations}>
+              一括取り消し
+            </Button>
+          </Box>
+        )}
         {gachaType.operationHistory.map(op => (
-          <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1 }}>
+          <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
             <Typography>
-              実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{" "}
+              実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{' '}
               {(() => {
                 const t = targets.find(t => t.id === op.target);
                 return t ? t.name : 'なし';
@@ -651,7 +660,6 @@ interface OverallViewProps {
 }
 
 const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
-  // 全体の集計結果を算出
   const overallAgg: { [prizeId: string]: number } = {};
   gachaType.prizes.forEach(prize => {
     overallAgg[prize.id] = 0;
@@ -662,11 +670,7 @@ const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
     }
   });
   const totalAbs = gachaType.prizes.reduce((sum, p) => sum + p.abs, 0);
-
-  // 全体の操作履歴（降順）
   const overallOps = [...gachaType.operationHistory].sort((a, b) => b.timestamp - a.timestamp);
-
-  // 各対象者ごとの操作履歴をグループ化
   const opsByTarget: { [key: string]: Operation[] } = {};
   targets.forEach(target => {
     opsByTarget[target.id] = [];
@@ -682,7 +686,6 @@ const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
   return (
     <Box>
       <Typography variant="h5">全体の結果</Typography>
-      {/* 全体の集計結果 */}
       <Typography variant="subtitle1">全体の集計結果</Typography>
       <TableContainer component={Paper} sx={{ mb: 2 }}>
         <Table>
@@ -708,17 +711,15 @@ const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
           </TableBody>
         </Table>
       </TableContainer>
-
-      {/* 全体の操作履歴（Accordion、デフォルト閉） */}
       <Accordion defaultExpanded={false}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="subtitle2">全体の操作履歴</Typography>
         </AccordionSummary>
         <AccordionDetails>
           {overallOps.map(op => (
-            <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1 }}>
+            <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
               <Typography>
-                実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{" "}
+                実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{' '}
                 {(() => {
                   const t = targets.find(t => t.id === op.target);
                   return t ? t.name : 'なし';
@@ -736,8 +737,6 @@ const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
           ))}
         </AccordionDetails>
       </Accordion>
-
-      {/* 各対象者ごとの結果 */}
       <Typography variant="h5" sx={{ mt: 2 }}>各対象者の結果</Typography>
       {targets.map(target => {
         const agg: { [prizeId: string]: number } = {};
@@ -781,16 +780,15 @@ const OverallView: React.FC<OverallViewProps> = ({ gachaType, targets }) => {
                   </TableBody>
                 </Table>
               </TableContainer>
-              {/* 各対象者ごとの操作履歴を折りたたむ */}
               <Accordion defaultExpanded={false} sx={{ mt: 2 }}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="subtitle2">操作履歴</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   {targetOps.map(op => (
-                    <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1 }}>
+                    <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
                       <Typography>
-                        実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{" "}
+                        実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{' '}
                         {(() => {
                           const t = targets.find(t => t.id === op.target);
                           return t ? t.name : 'なし';
