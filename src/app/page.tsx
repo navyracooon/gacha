@@ -289,16 +289,10 @@ const IndividualView: React.FC<IndividualViewProps> = ({
 
   const totalAbs = gachaType.prizes.reduce((sum, p) => sum + p.abs, 0);
 
-  // 新規景品追加時の相対確率
-  const computeRelative = (abs: number) => {
-    return totalAbs + abs > 0 ? ((abs / (totalAbs + abs)) * 100).toFixed(2) : '0.00';
-  };
-
   const [newPrizeName, setNewPrizeName] = useState<string>('');
   const [newPrizeAbs, setNewPrizeAbs] = useState<string>('');
   const [newPrizeLimit, setNewPrizeLimit] = useState<string>('');
   const [newPrizeRel, setNewPrizeRel] = useState<string>('');
-  const [lastEdited, setLastEdited] = useState<'abs' | null>(null);
   const [customGachaCount, setCustomGachaCount] = useState<string>('1');
 
   const addTarget = () => {
@@ -334,7 +328,6 @@ const IndividualView: React.FC<IndividualViewProps> = ({
 
   const handleNewPrizeAbsChange = (value: string) => {
     setNewPrizeAbs(value);
-    setLastEdited('abs');
     const absVal = parseFloat(value);
     if (!isNaN(absVal)) {
       const rel = totalAbs + absVal > 0 ? (absVal / (totalAbs + absVal)) * 100 : 0;
@@ -359,7 +352,6 @@ const IndividualView: React.FC<IndividualViewProps> = ({
     setNewPrizeAbs('');
     setNewPrizeLimit('');
     setNewPrizeRel('');
-    setLastEdited(null);
   };
 
   const updatePrize = (pid: string, newAbs: number) => {
