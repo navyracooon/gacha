@@ -30,7 +30,7 @@ const Page = () => {
   const [selectedGachaTypeId, setSelectedGachaTypeId] = useState<string>('');
   const [newGachaTypeAddName, setNewGachaTypeAddName] = useState<string>('');
   const [newGachaTypeModalOpen, setNewGachaTypeModalOpen] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'gacha' | 'results'>('results');
+  const [viewMode, setViewMode] = useState<'gacha' | 'results'>('gacha');
 
   const [targets, setTargets] = useState<Target[]>([{ id: 'none', name: 'なし' }]);
   const [selectedTargetId, setSelectedTargetId] = useState<string>('none');
