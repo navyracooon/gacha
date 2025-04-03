@@ -27,21 +27,28 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useGachaContext } from '../contexts/Gacha';
 import { Prize, PrizeField } from '../types/prize';
-import { Target } from '../types/target';
+import { Category } from '../types/category';
 import { GachaUtils } from '../utils/gacha';
+import { Target } from '../types/target';
 
 export const GachaView: React.FC = () => {
   const { gachaList, currentGachaId, retrieveGacha, updateGacha, createItemInField, retrieveItemInField, updateItemInField, deleteItemInField } = useGachaContext();
   const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
 
-  const [currentTargetId, setCurrentTargetId] = useState<string>(currentGacha.targets[0]?.id);
-  const [targetModalOpen, setTargetModalOpen] = useState<boolean>(false);
-  const [newTargetName, setNewTargetName] = useState<string>('');
   const [newPrizeName, setNewPrizeName] = useState<string>('');
   const [newPrizeWeight, setNewPrizeWeight] = useState<string>('');
   const [newPrizeRelWeight, setNewPrizeRelWeight] = useState<string>('');
   const [newPrizeLimit, setNewPrizeLimit] = useState<string>('');
+  const [newPrizeCategoryId, setNewPrizeCategoryId] = useState<string>('none');
+
   const [customGachaCount, setCustomGachaCount] = useState<string>('1');
+
+  const [currentTargetId, setCurrentTargetId] = useState<string>(currentGacha.targets[0]?.id);
+  const [newTargetName, setNewTargetName] = useState<string>('');
+  const [targetModalOpen, setTargetModalOpen] = useState<boolean>(false);
+
+  const [newCategoryName, setNewCategoryName] = useState<string>('');
+  const [categoryModalOpen, setCategoryModalOpen] = useState<boolean>(false);
 
   const gachaUtils = new GachaUtils(currentGacha);
   const overallAggregation = gachaUtils.getOverallAggregation();
@@ -53,12 +60,13 @@ export const GachaView: React.FC = () => {
     if (!newPrizeName || isNaN(parsedWeight)) return;
 
     const parsedLimit = !isNaN(parseInt(newPrizeLimit)) ? parseInt(newPrizeLimit) : undefined;
-    const newPrize: Prize = { id: uuidv4(), name: newPrizeName, weight: parsedWeight, limit: parsedLimit };
+    const newPrize: Prize = { id: uuidv4(), name: newPrizeName, weight: parsedWeight, limit: parsedLimit, categoryId: newPrizeCategoryId };
     createItemInField(currentGachaId, 'prizes', newPrize);
     setNewPrizeName('');
     setNewPrizeWeight('');
     setNewPrizeRelWeight('');
     setNewPrizeLimit('');
+    setNewPrizeCategoryId('none');
   };
 
   const handleNewPrizeWeightChange = (weight: string) => {
@@ -95,6 +103,9 @@ export const GachaView: React.FC = () => {
         if (isNaN(parseInt(value))) return;
         parsedValue = parseInt(value);
         break;
+      case 'categoryId':
+        parsedValue = value;
+        break;
     }
 
     const prevPrize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
@@ -103,6 +114,7 @@ export const GachaView: React.FC = () => {
     }
   };
 
+  // TODO: 後で確認
   const handleGachaPull = (count: number) => {
     const currentCounts: { [prizeId: string]: number } = {};
     currentGacha.prizes.forEach(prize => {
@@ -178,7 +190,14 @@ export const GachaView: React.FC = () => {
       createItemInField(currentGachaId, 'targets', fallbackTarget);
       setCurrentTargetId(fallbackTarget.id);
     }
-    setTargetModalOpen(false)
+    setTargetModalOpen(false);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    const newCategory: Category = { id: uuidv4(), name: newCategoryName.trim() };
+    createItemInField(currentGachaId, 'categories', newCategory);
+    setNewCategoryName('');
   };
 
   return (
@@ -188,7 +207,7 @@ export const GachaView: React.FC = () => {
           新しい景品の追加
         </Typography>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2}>
             <TextField label="景品名" value={newPrizeName} onChange={(e) => setNewPrizeName(e.target.value)} fullWidth />
           </Grid>
           <Grid item xs={12} sm={2}>
@@ -200,10 +219,29 @@ export const GachaView: React.FC = () => {
           <Grid item xs={12} sm={2}>
             <TextField label="上限" value={newPrizeLimit} onChange={(e) => setNewPrizeLimit(e.target.value)} fullWidth />
           </Grid>
-          <Grid item xs={12} sm={3}>
-            <Button variant="contained" onClick={handleAddPrize} fullWidth>
-              追加
-            </Button>
+          <Grid item xs={12} sm={2}>
+            <FormControl fullWidth>
+              <InputLabel>カテゴリ</InputLabel>
+              <Select
+                value={newPrizeCategoryId}
+                label="カテゴリ"
+                onChange={(e) => setNewPrizeCategoryId(e.target.value)}
+              >
+                {currentGacha.categories.map(category => (
+                  <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={2}>
+            <Box display="flex" flexDirection="column" gap={2}>
+              <Button variant="outlined" onClick={() => setCategoryModalOpen(true)}>
+                カテゴリ管理
+              </Button>
+              <Button variant="contained" onClick={handleAddPrize} fullWidth>
+                追加
+              </Button>
+            </Box>
           </Grid>
         </Grid>
       </Box>
@@ -213,11 +251,12 @@ export const GachaView: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>景品名</TableCell>
-                <TableCell>絶対確率 (%)</TableCell>
-                <TableCell>相対確率 (%)</TableCell>
-                <TableCell>上限</TableCell>
-                <TableCell>操作</TableCell>
+                <TableCell sx={{ width: '25%' }}>景品名</TableCell>
+                <TableCell sx={{ width: '15%' }}>絶対確率 (%)</TableCell>
+                <TableCell sx={{ width: '15%' }}>相対確率 (%)</TableCell>
+                <TableCell sx={{ width: '15%' }}>上限</TableCell>
+                <TableCell sx={{ width: '20%' }}>カテゴリ</TableCell>
+                <TableCell sx={{ width: '10%' }}>操作</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -232,6 +271,7 @@ export const GachaView: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <TextField
+                      label="絶対確率"
                       type="number"
                       value={prize.weight}
                       onChange={(e) => handleUpdatePrize(prize.id, 'weight', e.target.value)}
@@ -242,10 +282,25 @@ export const GachaView: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <TextField
+                      label="上限"
                       type="number"
                       value={prize.limit !== undefined ? prize.limit : ''}
                       onChange={(e) => handleUpdatePrize(prize.id, 'limit', e.target.value)}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <FormControl fullWidth>
+                      <InputLabel>カテゴリ</InputLabel>
+                      <Select
+                        label="カテゴリ"
+                        value={prize.categoryId}
+                        onChange={(e) => handleUpdatePrize(prize.id, 'categoryId', e.target.value)}
+                      >
+                        {currentGacha.categories.map(category => (
+                          <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </TableCell>
                   <TableCell>
                     <Button variant="outlined" color="error" onClick={() => deleteItemInField(currentGachaId, 'prizes', prize.id)}>
@@ -258,59 +313,99 @@ export const GachaView: React.FC = () => {
           </Table>
         </TableContainer>
       </Box>
-      <Box sx={{ my: 2 }}>
-        <Typography variant="h5">ガチャを回す</Typography>
-        <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <FormControl sx={{ minWidth: 120 }}>
-            <InputLabel>対象者</InputLabel>
-            <Select
-              value={currentTargetId}
-              label="対象者"
-              onChange={(e) => setCurrentTargetId(e.target.value)}
-            >
-              {currentGacha.targets.map(target => (
-                <MenuItem key={target.id} value={target.id}>{target.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button variant="contained" onClick={() => setTargetModalOpen(true)}>
-            対象者管理
-          </Button>
-        </Box>
-        <Dialog open={targetModalOpen} onClose={handleTargetModalClose} fullWidth maxWidth="sm">
-          <DialogTitle>対象者管理</DialogTitle>
-          <DialogContent>
-            <Box sx={{ mt: 3 }}>
-              {currentGacha.targets.map(target => (
-                <Box key={target.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+      <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <FormControl sx={{ minWidth: 120 }}>
+          <InputLabel>対象者</InputLabel>
+          <Select
+            value={currentTargetId}
+            label="対象者"
+            onChange={(e) => setCurrentTargetId(e.target.value)}
+          >
+            {currentGacha.targets.map(target => (
+              <MenuItem key={target.id} value={target.id}>{target.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Button variant="outlined" onClick={() => setTargetModalOpen(true)}>
+          対象者管理
+        </Button>
+      </Box>
+      <Dialog open={targetModalOpen} onClose={handleTargetModalClose} fullWidth maxWidth="sm">
+        <DialogTitle>対象者管理</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 3 }}>
+            {currentGacha.targets.map(target => (
+              <Box key={target.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <TextField
+                  label="対象者名"
+                  value={target.name}
+                  onChange={(e) => handleUpdateTargetName(target.id, e.target.value)}
+                  fullWidth
+                />
+                <Button variant="outlined" color="error" onClick={() => handleDeleteTarget(target.id)}>
+                  削除
+                </Button>
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ mt: 3 }}>
+            <TextField
+              label="新規対象者名"
+              value={newTargetName}
+              onChange={(e) => setNewTargetName(e.target.value)}
+              fullWidth
+            />
+            <Button variant="contained" onClick={handleAddTarget} sx={{ mt: 1 }}>
+              追加
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleTargetModalClose}>閉じる</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={categoryModalOpen} onClose={() => setCategoryModalOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>カテゴリ管理</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 3 }}>
+            {currentGacha.categories.map(category => (
+                <Box key={category.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                   <TextField
-                    label="対象者名"
-                    value={target.name}
-                    onChange={(e) => handleUpdateTargetName(target.id, e.target.value)}
+                    label="カテゴリ名"
+                    value={category.name}
+                    onChange={(e) => updateItemInField(currentGachaId, 'categories', { id: category.id, name: e.target.value})}
+                    InputProps={{ readOnly: category.id !== 'none' ? false : true }}
                     fullWidth
                   />
-                  <Button variant="outlined" color="error" onClick={() => handleDeleteTarget(target.id)}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => deleteItemInField(currentGachaId, 'categories', category.id)}
+                    sx={{ visibility: category.id !== 'none' ? 'visible' : 'hidden' }}
+                  >
                     削除
                   </Button>
                 </Box>
               ))}
-            </Box>
-            <Box sx={{ mt: 3 }}>
-              <TextField
-                label="新規対象者名"
-                value={newTargetName}
-                onChange={(e) => setNewTargetName(e.target.value)}
-                fullWidth
-              />
-              <Button variant="contained" onClick={handleAddTarget} sx={{ mt: 1 }}>
-                追加
-              </Button>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleTargetModalClose}>閉じる</Button>
-          </DialogActions>
-        </Dialog>
+          </Box>
+          <Box sx={{ mt: 3 }}>
+            <TextField
+              label="新規カテゴリ名"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              fullWidth
+            />
+            <Button variant="contained" onClick={handleAddCategory} sx={{ mt: 1 }}>
+              追加
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCategoryModalOpen(false)}>閉じる</Button>
+        </DialogActions>
+      </Dialog>
+      <Box sx={{ my: 2 }}>
+        <Typography variant="h5" sx={{ mb: 2 }}>ガチャを回す</Typography>
         <Grid container spacing={2} alignItems="center">
           <Grid item>
             <TextField
@@ -391,26 +486,27 @@ export const GachaView: React.FC = () => {
           </Box>
         )}
         {currentGacha.operationHistory
-          .slice().sort((a, b) => b.timestamp - a.timestamp)
+          .slice()
+          .sort((a, b) => b.timestamp - a.timestamp)
           .map(history => (
-          <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
-            <Typography>
-              実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
-              対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
-            </Typography>
-            {Object.keys(history.results).map(prizeId => {
-              const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
-              return prize ? (
-                <Typography key={prizeId}>
-                  {prize.name}: {history.results[prizeId]}回
-                </Typography>
-              ) : null;
-            })}
-            <Button variant="outlined" color="error" onClick={() => deleteItemInField(currentGachaId, 'operationHistory', history.id)}>
-              取り消し
-            </Button>
-          </Box>
-        ))}
+            <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
+              <Typography>
+                実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
+                対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
+              </Typography>
+              {Object.keys(history.results).map(prizeId => {
+                const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
+                return prize ? (
+                  <Typography key={prizeId}>
+                    {prize.name}: {history.results[prizeId]}回
+                  </Typography>
+                ) : null;
+              })}
+              <Button variant="outlined" color="error" onClick={() => deleteItemInField(currentGachaId, 'operationHistory', history.id)}>
+                取り消し
+              </Button>
+            </Box>
+          ))}
       </Box>
     </Box>
   );

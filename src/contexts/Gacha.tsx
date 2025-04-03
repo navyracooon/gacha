@@ -54,6 +54,7 @@ export const GachaProvider: React.FC<PropsWithChildren> = ({ children }) => {
       id: uuidv4(),
       name: formattedName,
       targets: [{ id: uuidv4(), name: 'なし' }],
+      categories: [{ id: 'none', name: 'なし' }],
       prizes: [],
       operationHistory: []
     };
