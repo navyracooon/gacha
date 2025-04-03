@@ -1,7 +1,9 @@
+export type PrizeField = 'name' | 'weight' | 'limit';
+
 export type Prize = {
   id: string;
   name: string;
-  abs: number;
+  weight: number;
   limit?: number;
 };
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Box,
   Typography,
@@ -15,44 +14,21 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import { Gacha } from "../types/gacha";
-import { Operation } from "../types/operation";
-import { Target } from "../types/target";
+import { useGachaContext } from '../contexts/Gacha';
+import { GachaUtils } from '../utils/gacha';
 
-type Props = {
-  gacha: Gacha;
-  targets: Target[];
-}
+export const ResultsView: React.FC = () => {
+  const { gachaList, currentGachaId, retrieveGacha, retrieveItemInField } = useGachaContext();
+  const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
 
-export const ResultsView: React.FC<Props> = ({ gacha, targets }) => {
-  const overallAgg: { [prizeId: string]: number } = {};
-  gacha.prizes.forEach(prize => {
-    overallAgg[prize.id] = 0;
-  });
-  gacha.operationHistory.forEach(op => {
-    for (const pid in op.results) {
-      overallAgg[pid] = (overallAgg[pid] || 0) + op.results[pid];
-    }
-  });
-  const totalAbs = gacha.prizes.reduce((sum, p) => sum + p.abs, 0);
-  const overallOps = [...gacha.operationHistory].sort((a, b) => b.timestamp - a.timestamp);
-  const opsByTarget: { [key: string]: Operation[] } = {};
-  targets.forEach(target => {
-    opsByTarget[target.id] = [];
-  });
-  gacha.operationHistory.forEach(op => {
-    const key = op.target || 'none';
-    if (!opsByTarget[key]) {
-      opsByTarget[key] = [];
-    }
-    opsByTarget[key].push(op);
-  });
+  const gachaUtils = new GachaUtils(currentGacha);
+  const overallAggregation = gachaUtils.getOverallAggregation();
+  const totalWeight = gachaUtils.getTotalPrizeWeight();
 
   return (
     <Box>
       <Typography variant="h5">全体の結果</Typography>
-      <Typography variant="subtitle1">全体の集計結果</Typography>
-      <TableContainer component={Paper} sx={{ mb: 2 }}>
+      <TableContainer component={Paper} sx={{ my: 2 }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -63,14 +39,14 @@ export const ResultsView: React.FC<Props> = ({ gacha, targets }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {gacha.prizes.map(prize => (
+            {currentGacha.prizes.map(prize => (
               <TableRow key={prize.id}>
                 <TableCell>{prize.name}</TableCell>
-                <TableCell>{prize.abs}</TableCell>
+                <TableCell>{prize.weight}</TableCell>
                 <TableCell>
-                  {totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}
+                  {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
                 </TableCell>
-                <TableCell>{overallAgg[prize.id] || 0}</TableCell>
+                <TableCell>{overallAggregation[prize.id] || 0}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -81,20 +57,19 @@ export const ResultsView: React.FC<Props> = ({ gacha, targets }) => {
           <Typography variant="subtitle2">全体の操作履歴</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          {overallOps.map(op => (
-            <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
+          {currentGacha.operationHistory
+            .slice().sort((a, b) => b.timestamp - a.timestamp)
+            .map(history => (
+            <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
               <Typography>
-                実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{' '}
-                {(() => {
-                  const t = targets.find(t => t.id === op.target);
-                  return t ? t.name : 'なし';
-                })()}
+                実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
+                対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
               </Typography>
-              {Object.keys(op.results).map(prizeId => {
-                const prize = gacha.prizes.find(p => p.id === prizeId);
+              {Object.keys(history.results).map(prizeId => {
+                const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
                 return prize ? (
                   <Typography key={prizeId}>
-                    {prize.name}: {op.results[prizeId]}回
+                    {prize.name}: {history.results[prizeId]}回
                   </Typography>
                 ) : null;
               })}
@@ -103,17 +78,9 @@ export const ResultsView: React.FC<Props> = ({ gacha, targets }) => {
         </AccordionDetails>
       </Accordion>
       <Typography variant="h5" sx={{ mt: 2 }}>各対象者の結果</Typography>
-      {targets.map(target => {
-        const agg: { [prizeId: string]: number } = {};
-        gacha.prizes.forEach(prize => {
-          agg[prize.id] = 0;
-        });
-        const targetOps = (opsByTarget[target.id] || []).sort((a, b) => b.timestamp - a.timestamp);
-        targetOps.forEach(op => {
-          for (const pid in op.results) {
-            agg[pid] = (agg[pid] || 0) + op.results[pid];
-          }
-        });
+      {currentGacha.targets.map(target => {
+        const targetAggregation = gachaUtils.getTargetAggregation(target.id);
+
         return (
           <Accordion key={target.id} defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -132,14 +99,14 @@ export const ResultsView: React.FC<Props> = ({ gacha, targets }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {gacha.prizes.map(prize => (
+                    {currentGacha.prizes.map(prize => (
                       <TableRow key={prize.id}>
                         <TableCell>{prize.name}</TableCell>
-                        <TableCell>{prize.abs}</TableCell>
+                        <TableCell>{prize.weight}</TableCell>
                         <TableCell>
-                          {totalAbs > 0 ? ((prize.abs / totalAbs) * 100).toFixed(2) : '0.00'}
+                          {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
                         </TableCell>
-                        <TableCell>{agg[prize.id] || 0}</TableCell>
+                        <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -150,20 +117,20 @@ export const ResultsView: React.FC<Props> = ({ gacha, targets }) => {
                   <Typography variant="subtitle2">操作履歴</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  {targetOps.map(op => (
-                    <Box key={op.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
+                  {currentGacha.operationHistory
+                    .filter(history => history.target === target.id)
+                    .slice().sort((a, b) => b.timestamp - a.timestamp)
+                    .map(history => (
+                    <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
                       <Typography>
-                        実行日時: {new Date(op.timestamp).toLocaleString()} - {op.count}回実行 - 対象者:{' '}
-                        {(() => {
-                          const t = targets.find(t => t.id === op.target);
-                          return t ? t.name : 'なし';
-                        })()}
+                        実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
+                        対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
                       </Typography>
-                      {Object.keys(op.results).map(prizeId => {
-                        const prize = gacha.prizes.find(p => p.id === prizeId);
+                      {Object.keys(history.results).map(prizeId => {
+                        const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
                         return prize ? (
                           <Typography key={prizeId}>
-                            {prize.name}: {op.results[prizeId]}回
+                            {prize.name}: {history.results[prizeId]}回
                           </Typography>
                         ) : null;
                       })}

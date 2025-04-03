@@ -1,4 +1,8 @@
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+import { PropsWithChildren } from 'react';
+
+import { RootProvider } from '../contexts/Root';
+
+const RootLayout: React.FC<PropsWithChildren> = ({ children }) => {
   return (
     <html lang="ja">
       <head>
@@ -9,7 +13,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta charSet="UTF-8" />
         <meta name="description" content="配信者さん用ガチャシミュレーター" />
       </head>
-      <body>{children}</body>
+      <body>
+        <RootProvider>
+          {children}
+        </RootProvider>
+      </body>
     </html>
   );
-}
+};
+
+export default RootLayout;

@@ -3,6 +3,6 @@ export type Operation = {
   count: number;
   results: { [prizeId: string]: number };
   timestamp: number;
-  target?: string;
+  target: string;
 };
 
