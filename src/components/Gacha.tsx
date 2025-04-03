@@ -248,7 +248,7 @@ export const GachaView: React.FC = () => {
       }
       return 0;
     });
-  }, [currentGacha.prizes, currentGacha.categories, orderBy, order, isEditing]);
+  }, [currentGacha.prizes, currentGacha.categories, orderBy, order, isEditing, currentGachaId, retrieveItemInField]);
 
   return (
     <Box>

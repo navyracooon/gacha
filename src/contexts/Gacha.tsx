@@ -112,7 +112,7 @@ export const GachaProvider: React.FC<PropsWithChildren> = ({ children }) => {
     const updated: Gacha = {
       ...gacha,
       [field]: gacha[field].filter(
-        item => (item as any).id !== itemId
+        item => item.id !== itemId
       )
     };
     updateGacha(updated);
