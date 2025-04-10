@@ -15,6 +15,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { useGachaContext } from '../contexts/Gacha';
+import { FormatUtils } from '../utils/format';
 import { GachaUtils } from '../utils/gacha';
 
 export const ResultsView: React.FC = () => {
@@ -44,7 +45,7 @@ export const ResultsView: React.FC = () => {
                 <TableCell>{prize.name}</TableCell>
                 <TableCell>{prize.weight}</TableCell>
                 <TableCell>
-                  {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
+                  {totalWeight > 0 ? (FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4)) : '0.00'}
                 </TableCell>
                 <TableCell>{overallAggregation[prize.id] || 0}</TableCell>
               </TableRow>
@@ -65,11 +66,11 @@ export const ResultsView: React.FC = () => {
                 実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
                 対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
               </Typography>
-              {Object.keys(history.results).map(prizeId => {
-                const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
-                return prize ? (
-                  <Typography key={prizeId}>
-                    {prize.name}: {history.results[prizeId]}回
+              {currentGacha.prizes.map(prize => {
+                const count = history.results[prize.id];
+                return count !== undefined ? (
+                  <Typography key={prize.id}>
+                    {prize.name}: {count}回
                   </Typography>
                 ) : null;
               })}
@@ -99,16 +100,19 @@ export const ResultsView: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {currentGacha.prizes.map(prize => (
-                      <TableRow key={prize.id}>
-                        <TableCell>{prize.name}</TableCell>
-                        <TableCell>{prize.weight}</TableCell>
-                        <TableCell>
-                          {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
-                        </TableCell>
-                        <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
-                      </TableRow>
-                    ))}
+                    {currentGacha.prizes
+                      .filter(prize => targetAggregation[prize.id] !== 0)
+                      .map(prize => (
+                        <TableRow key={prize.id}>
+                          <TableCell>{prize.name}</TableCell>
+                          <TableCell>{prize.weight}</TableCell>
+                          <TableCell>
+                            {totalWeight > 0 ? FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4) : '0.00'}
+                          </TableCell>
+                          <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
+                        </TableRow>
+                      ))
+                    }
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -126,11 +130,11 @@ export const ResultsView: React.FC = () => {
                         実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
                         対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
                       </Typography>
-                      {Object.keys(history.results).map(prizeId => {
-                        const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
-                        return prize ? (
-                          <Typography key={prizeId}>
-                            {prize.name}: {history.results[prizeId]}回
+                      {currentGacha.prizes.map(prize => {
+                        const count = history.results[prize.id];
+                        return count !== undefined ? (
+                          <Typography key={prize.id}>
+                            {prize.name}: {count}回
                           </Typography>
                         ) : null;
                       })}
