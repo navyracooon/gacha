@@ -579,11 +579,11 @@ export const GachaView: React.FC = () => {
                 実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
                 対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
               </Typography>
-              {Object.keys(history.results).map((prizeId) => {
-                const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
-                return prize ? (
-                  <Typography key={prizeId}>
-                    {prize.name}: {history.results[prizeId]}回
+              {currentGacha.prizes.map(prize => {
+                const count = history.results[prize.id];
+                return count !== undefined ? (
+                  <Typography key={prize.id}>
+                    {prize.name}: {count}回
                   </Typography>
                 ) : null;
               })}
