@@ -4,25 +4,25 @@ import { useState, useMemo } from 'react';
 import {
   Box,
   Button,
-  TextField,
-  Typography,
-  Select,
-  MenuItem,
   Dialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Grid,
-  FormControl,
-  InputLabel,
   TableSortLabel,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -343,7 +343,7 @@ export const GachaView: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sortedPrizes.map((prize) => (
+              {sortedPrizes.map(prize => (
                 <TableRow key={prize.id}>
                   <TableCell>
                     <TextField
@@ -547,7 +547,9 @@ export const GachaView: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {currentGacha.prizes.map((prize) => (
+              {currentGacha.prizes
+                .filter(prize => currentTargetAggregation[prize.id] !== 0)
+                .map((prize) => (
                 <TableRow key={prize.id}>
                   <TableCell>{prize.name}</TableCell>
                   <TableCell>{prize.weight}</TableCell>

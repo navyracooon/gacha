@@ -100,16 +100,19 @@ export const ResultsView: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {currentGacha.prizes.map(prize => (
-                      <TableRow key={prize.id}>
-                        <TableCell>{prize.name}</TableCell>
-                        <TableCell>{prize.weight}</TableCell>
-                        <TableCell>
-                          {totalWeight > 0 ? (FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4)) : '0.00'}
-                        </TableCell>
-                        <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
-                      </TableRow>
-                    ))}
+                    {currentGacha.prizes
+                      .filter(prize => targetAggregation[prize.id] !== 0)
+                      .map(prize => (
+                        <TableRow key={prize.id}>
+                          <TableCell>{prize.name}</TableCell>
+                          <TableCell>{prize.weight}</TableCell>
+                          <TableCell>
+                            {totalWeight > 0 ? FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4) : '0.00'}
+                          </TableCell>
+                          <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
+                        </TableRow>
+                      ))
+                    }
                   </TableBody>
                 </Table>
               </TableContainer>
