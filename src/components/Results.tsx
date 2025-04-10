@@ -15,6 +15,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { useGachaContext } from '../contexts/Gacha';
+import { FormatUtils } from '../utils/format';
 import { GachaUtils } from '../utils/gacha';
 
 export const ResultsView: React.FC = () => {
@@ -44,7 +45,7 @@ export const ResultsView: React.FC = () => {
                 <TableCell>{prize.name}</TableCell>
                 <TableCell>{prize.weight}</TableCell>
                 <TableCell>
-                  {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
+                  {totalWeight > 0 ? (FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4)) : '0.00'}
                 </TableCell>
                 <TableCell>{overallAggregation[prize.id] || 0}</TableCell>
               </TableRow>
@@ -104,7 +105,7 @@ export const ResultsView: React.FC = () => {
                         <TableCell>{prize.name}</TableCell>
                         <TableCell>{prize.weight}</TableCell>
                         <TableCell>
-                          {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
+                          {totalWeight > 0 ? (FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4)) : '0.00'}
                         </TableCell>
                         <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
                       </TableRow>

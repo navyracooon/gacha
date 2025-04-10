@@ -28,10 +28,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { CustomSortIcon } from '../components/CustomSortIcon';
 import { useGachaContext } from '../contexts/Gacha';
-import { Prize, PrizeField } from '../types/prize';
 import { Category } from '../types/category';
-import { GachaUtils } from '../utils/gacha';
+import { Prize, PrizeField } from '../types/prize';
 import { Target } from '../types/target';
+import { FormatUtils } from '../utils/format';
+import { GachaUtils } from '../utils/gacha';
 
 export const GachaView: React.FC = () => {
   const {
@@ -88,7 +89,7 @@ export const GachaView: React.FC = () => {
     const parsedWeight = parseFloat(weight);
     if (!isNaN(parsedWeight)) {
       const relWeight = totalWeight + parsedWeight > 0 ? (parsedWeight / (totalWeight + parsedWeight)) * 100 : 0;
-      setNewPrizeRelWeight(relWeight.toFixed(2));
+      setNewPrizeRelWeight(FormatUtils.toFixedWithoutZeros(relWeight, 4));
     } else {
       setNewPrizeRelWeight('');
     }
@@ -320,8 +321,8 @@ export const GachaView: React.FC = () => {
                     景品名
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ width: '15%' }}>絶対確率 (%)</TableCell>
-                <TableCell sx={{ width: '15%' }}>相対確率 (%)</TableCell>
+                <TableCell sx={{ width: '16%' }}>絶対確率 (%)</TableCell>
+                <TableCell sx={{ width: '14%' }}>相対確率 (%)</TableCell>
                 <TableCell sx={{ width: '15%' }}>上限</TableCell>
                 <TableCell sx={{ width: '20%' }}>
                   <TableSortLabel
@@ -363,7 +364,9 @@ export const GachaView: React.FC = () => {
                       onChange={(e) => handleUpdatePrize(prize.id, 'weight', e.target.value)}
                     />
                   </TableCell>
-                  <TableCell>{totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}</TableCell>
+                  <TableCell>
+                    {totalWeight > 0 ? FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4) : '0.00'}
+                  </TableCell>
                   <TableCell>
                     <TextField
                       label="上限"
@@ -548,7 +551,7 @@ export const GachaView: React.FC = () => {
                 <TableRow key={prize.id}>
                   <TableCell>{prize.name}</TableCell>
                   <TableCell>{prize.weight}</TableCell>
-                  <TableCell>{totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}</TableCell>
+                  <TableCell>{totalWeight > 0 ? FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4) : '0.00'}</TableCell>
                   <TableCell>{currentTargetAggregation[prize.id] || 0}</TableCell>
                 </TableRow>
               ))}
