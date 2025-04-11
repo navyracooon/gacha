@@ -10,6 +10,7 @@ import {
   DialogTitle,
   FormControl,
   Grid,
+  IconButton,
   InputLabel,
   MenuItem,
   Paper,
@@ -24,6 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CustomSortIcon } from '../components/CustomSortIcon';
@@ -65,6 +67,8 @@ export const GachaView: React.FC = () => {
   const [orderBy, setOrderBy] = useState<'name' | 'categoryId' | null>(null);
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [isEditing, setIsEditing] = useState(false);
+
+  const [isZeroVisible, setIsZeroVisible] = useState(false);
 
   const gachaUtils = new GachaUtils(currentGacha);
   const overallAggregation = gachaUtils.getOverallAggregation();
@@ -533,9 +537,14 @@ export const GachaView: React.FC = () => {
         </Grid>
       </Box>
       <Box sx={{ my: 2 }}>
-        <Typography variant="h5" sx={{ mb: 1 }}>
-          集計結果（対象者：{retrieveItemInField(currentGachaId, 'targets', currentTargetId)?.name || 'なし'}）
-        </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h5" sx={{ mb: 1 }}>
+            集計結果（対象者：{retrieveItemInField(currentGachaId, 'targets', currentTargetId)?.name || 'なし'}）
+          </Typography>
+          <IconButton onClick={() => setIsZeroVisible(!isZeroVisible)}>
+            {isZeroVisible ? <Visibility /> : <VisibilityOff />}
+          </IconButton>
+        </Box>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -548,7 +557,7 @@ export const GachaView: React.FC = () => {
             </TableHead>
             <TableBody>
               {currentGacha.prizes
-                .filter(prize => currentTargetAggregation[prize.id] !== 0)
+                .filter(prize => isZeroVisible || currentTargetAggregation[prize.id] !== 0)
                 .map((prize) => (
                 <TableRow key={prize.id}>
                   <TableCell>{prize.name}</TableCell>

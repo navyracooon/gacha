@@ -1,18 +1,22 @@
+'use client';
+
+import { useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
-  Typography,
+  IconButton,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  Typography,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { ExpandMore, Visibility, VisibilityOff } from '@mui/icons-material';
 
 import { useGachaContext } from '../contexts/Gacha';
 import { FormatUtils } from '../utils/format';
@@ -22,13 +26,21 @@ export const ResultsView: React.FC = () => {
   const { gachaList, currentGachaId, retrieveGacha, retrieveItemInField } = useGachaContext();
   const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
 
+  const [isZeroVisible, setIsZeroVisible] = useState(true);
+  const [isTargetZeroVisible, setIsTargetZeroVisible] = useState(false);
+
   const gachaUtils = new GachaUtils(currentGacha);
   const overallAggregation = gachaUtils.getOverallAggregation();
   const totalWeight = gachaUtils.getTotalPrizeWeight();
 
   return (
     <Box>
-      <Typography variant="h5">全体の結果</Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5">全体の結果</Typography>
+        <IconButton onClick={() => setIsZeroVisible(!isZeroVisible)}>
+          {isZeroVisible ? <Visibility /> : <VisibilityOff />}
+        </IconButton>
+      </Box>
       <TableContainer component={Paper} sx={{ my: 2 }}>
         <Table>
           <TableHead>
@@ -40,7 +52,9 @@ export const ResultsView: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {currentGacha.prizes.map(prize => (
+            {currentGacha.prizes
+              .filter(prize => isZeroVisible || overallAggregation[prize.id] !== 0)
+              .map(prize => (
               <TableRow key={prize.id}>
                 <TableCell>{prize.name}</TableCell>
                 <TableCell>{prize.weight}</TableCell>
@@ -54,7 +68,7 @@ export const ResultsView: React.FC = () => {
         </Table>
       </TableContainer>
       <Accordion defaultExpanded={false}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <AccordionSummary expandIcon={<ExpandMore />}>
           <Typography variant="subtitle2">全体の操作履歴</Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -78,13 +92,18 @@ export const ResultsView: React.FC = () => {
           ))}
         </AccordionDetails>
       </Accordion>
-      <Typography variant="h5" sx={{ mt: 2 }}>各対象者の結果</Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5" sx={{ mt: 2 }}>各対象者の結果</Typography>
+        <IconButton onClick={() => setIsTargetZeroVisible(!isTargetZeroVisible)}>
+          {isTargetZeroVisible ? <Visibility /> : <VisibilityOff />}
+        </IconButton>
+      </Box>
       {currentGacha.targets.map(target => {
         const targetAggregation = gachaUtils.getTargetAggregation(target.id);
 
         return (
           <Accordion key={target.id} defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <AccordionSummary expandIcon={<ExpandMore />}>
               <Typography variant="h6">{target.name}</Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -101,7 +120,7 @@ export const ResultsView: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {currentGacha.prizes
-                      .filter(prize => targetAggregation[prize.id] !== 0)
+                      .filter(prize => isTargetZeroVisible || targetAggregation[prize.id] !== 0)
                       .map(prize => (
                         <TableRow key={prize.id}>
                           <TableCell>{prize.name}</TableCell>
@@ -117,7 +136,7 @@ export const ResultsView: React.FC = () => {
                 </Table>
               </TableContainer>
               <Accordion defaultExpanded={false} sx={{ mt: 2 }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <AccordionSummary expandIcon={<ExpandMore />}>
                   <Typography variant="subtitle2">操作履歴</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
