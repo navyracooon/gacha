@@ -14,6 +14,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { ExpandMore, Visibility, VisibilityOff } from '@mui/icons-material';
@@ -37,9 +38,11 @@ export const ResultsView: React.FC = () => {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Typography variant="h5">全体の結果</Typography>
-        <IconButton onClick={() => setIsZeroVisible(!isZeroVisible)}>
-          {isZeroVisible ? <Visibility /> : <VisibilityOff />}
-        </IconButton>
+        <Tooltip title="個数が0の景品を非表示にする" placement="top">
+          <IconButton onClick={() => setIsZeroVisible(!isZeroVisible)}>
+            {isZeroVisible ? <Visibility /> : <VisibilityOff />}
+          </IconButton>
+        </Tooltip>
       </Box>
       <TableContainer component={Paper} sx={{ my: 2 }}>
         <Table>
@@ -55,15 +58,17 @@ export const ResultsView: React.FC = () => {
             {currentGacha.prizes
               .filter(prize => isZeroVisible || overallAggregation[prize.id] !== 0)
               .map(prize => (
-              <TableRow key={prize.id}>
-                <TableCell>{prize.name}</TableCell>
-                <TableCell>{prize.weight}</TableCell>
-                <TableCell>
-                  {totalWeight > 0 ? (FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4)) : '0.00'}
-                </TableCell>
-                <TableCell>{overallAggregation[prize.id] || 0}</TableCell>
-              </TableRow>
-            ))}
+                <TableRow key={prize.id}>
+                  <TableCell>{prize.name}</TableCell>
+                  <TableCell>{prize.weight}</TableCell>
+                  <TableCell>
+                    {totalWeight > 0
+                      ? FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4)
+                      : '0.00'}
+                  </TableCell>
+                  <TableCell>{overallAggregation[prize.id] || 0}</TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </TableContainer>
@@ -73,30 +78,39 @@ export const ResultsView: React.FC = () => {
         </AccordionSummary>
         <AccordionDetails>
           {currentGacha.operationHistory
-            .slice().sort((a, b) => b.timestamp - a.timestamp)
+            .slice()
+            .sort((a, b) => b.timestamp - a.timestamp)
             .map(history => (
-            <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
-              <Typography>
-                実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
-                対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
-              </Typography>
-              {currentGacha.prizes.map(prize => {
-                const count = history.results[prize.id];
-                return count !== undefined ? (
-                  <Typography key={prize.id}>
-                    {prize.name}: {count}回
-                  </Typography>
-                ) : null;
-              })}
-            </Box>
-          ))}
+              <Box
+                key={history.id}
+                sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}
+              >
+                <Typography>
+                  実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
+                  対象者:{' '}
+                  {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
+                </Typography>
+                {currentGacha.prizes.map(prize => {
+                  const count = history.results[prize.id];
+                  return count !== undefined ? (
+                    <Typography key={prize.id}>
+                      {prize.name}: {count}回
+                    </Typography>
+                  ) : null;
+                })}
+              </Box>
+            ))}
         </AccordionDetails>
       </Accordion>
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="h5" sx={{ mt: 2 }}>各対象者の結果</Typography>
-        <IconButton onClick={() => setIsTargetZeroVisible(!isTargetZeroVisible)}>
-          {isTargetZeroVisible ? <Visibility /> : <VisibilityOff />}
-        </IconButton>
+        <Typography variant="h5" sx={{ mt: 2 }}>
+          各対象者の結果
+        </Typography>
+        <Tooltip title="個数が0の景品を非表示にする" placement="top">
+          <IconButton onClick={() => setIsTargetZeroVisible(!isTargetZeroVisible)}>
+            {isTargetZeroVisible ? <Visibility /> : <VisibilityOff />}
+          </IconButton>
+        </Tooltip>
       </Box>
       {currentGacha.targets.map(target => {
         const targetAggregation = gachaUtils.getTargetAggregation(target.id);
@@ -126,12 +140,16 @@ export const ResultsView: React.FC = () => {
                           <TableCell>{prize.name}</TableCell>
                           <TableCell>{prize.weight}</TableCell>
                           <TableCell>
-                            {totalWeight > 0 ? FormatUtils.toFixedWithoutZeros((prize.weight / totalWeight) * 100, 4) : '0.00'}
+                            {totalWeight > 0
+                              ? FormatUtils.toFixedWithoutZeros(
+                                  (prize.weight / totalWeight) * 100,
+                                  4,
+                                )
+                              : '0.00'}
                           </TableCell>
                           <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
                         </TableRow>
-                      ))
-                    }
+                      ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -142,23 +160,29 @@ export const ResultsView: React.FC = () => {
                 <AccordionDetails>
                   {currentGacha.operationHistory
                     .filter(history => history.target === target.id)
-                    .slice().sort((a, b) => b.timestamp - a.timestamp)
+                    .slice()
+                    .sort((a, b) => b.timestamp - a.timestamp)
                     .map(history => (
-                    <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
-                      <Typography>
-                        実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
-                        対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
-                      </Typography>
-                      {currentGacha.prizes.map(prize => {
-                        const count = history.results[prize.id];
-                        return count !== undefined ? (
-                          <Typography key={prize.id}>
-                            {prize.name}: {count}回
-                          </Typography>
-                        ) : null;
-                      })}
-                    </Box>
-                  ))}
+                      <Box
+                        key={history.id}
+                        sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}
+                      >
+                        <Typography>
+                          実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}
+                          回実行 - 対象者:{' '}
+                          {retrieveItemInField(currentGachaId, 'targets', history.target)?.name ||
+                            'なし'}
+                        </Typography>
+                        {currentGacha.prizes.map(prize => {
+                          const count = history.results[prize.id];
+                          return count !== undefined ? (
+                            <Typography key={prize.id}>
+                              {prize.name}: {count}回
+                            </Typography>
+                          ) : null;
+                        })}
+                      </Box>
+                    ))}
                 </AccordionDetails>
               </Accordion>
             </AccordionDetails>
@@ -168,4 +192,3 @@ export const ResultsView: React.FC = () => {
     </Box>
   );
 };
-

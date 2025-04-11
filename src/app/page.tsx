@@ -13,7 +13,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
   FormControl,
   InputLabel,
 } from '@mui/material';
@@ -23,7 +22,15 @@ import { ResultsView } from '../components/Results';
 import { useGachaContext } from '../contexts/Gacha';
 
 const Page = () => {
-  const { gachaList, currentGachaId, setCurrentGachaId, createGacha, retrieveGacha, updateGacha, deleteGacha } = useGachaContext();
+  const {
+    gachaList,
+    currentGachaId,
+    setCurrentGachaId,
+    createGacha,
+    retrieveGacha,
+    updateGacha,
+    deleteGacha,
+  } = useGachaContext();
   const [newGachaName, setNewGachaName] = useState<string>('');
   const [addGachaModalOpen, setAddGachaModalOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'gacha' | 'results'>('gacha');
@@ -53,7 +60,7 @@ const Page = () => {
     setAddGachaModalOpen(false);
   };
 
-  const currentGacha = retrieveGacha(currentGachaId) || gachaList[0]
+  const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
 
   if (gachaList.length === 0) {
     return (
@@ -65,21 +72,21 @@ const Page = () => {
           <Typography variant="body1">
             ガチャが存在しません。新しいガチャを追加してください。
           </Typography>
-          <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={8}>
+          <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ width: '60%' }}>
               <TextField
                 label="ガチャの種類名"
                 value={newGachaName}
-                onChange={(e) => setNewGachaName(e.target.value)}
+                onChange={e => setNewGachaName(e.target.value)}
                 fullWidth
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
+            </Box>
+            <Box sx={{ width: '30%' }}>
               <Button variant="contained" onClick={handleAddGacha} fullWidth>
                 追加
               </Button>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Box>
       </Container>
     );
@@ -96,7 +103,7 @@ const Page = () => {
           <Select
             value={currentGachaId}
             label="ガチャの種類選択"
-            onChange={(e) => setCurrentGachaId(e.target.value)}
+            onChange={e => setCurrentGachaId(e.target.value)}
           >
             {gachaList.map(gacha => (
               <MenuItem key={gacha.id} value={gacha.id}>
@@ -109,7 +116,7 @@ const Page = () => {
           <TextField
             label="ガチャの種類名編集"
             value={currentGacha.name}
-            onChange={(e) => updateGacha({ ...currentGacha, name: e.target.value })}
+            onChange={e => updateGacha({ ...currentGacha, name: e.target.value })}
             fullWidth
           />
         </Box>
@@ -120,14 +127,19 @@ const Page = () => {
           削除
         </Button>
       </Box>
-      <Dialog open={addGachaModalOpen} onClose={() => setAddGachaModalOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={addGachaModalOpen}
+        onClose={() => setAddGachaModalOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>新しいガチャの種類の追加</DialogTitle>
         <DialogContent>
           <TextField
             sx={{ mt: 2 }}
             label="ガチャの種類名"
             value={newGachaName}
-            onChange={(e) => setNewGachaName(e.target.value)}
+            onChange={e => setNewGachaName(e.target.value)}
             fullWidth
           />
         </DialogContent>
@@ -137,18 +149,20 @@ const Page = () => {
         </DialogActions>
       </Dialog>
       <Box sx={{ my: 2, display: 'flex', justifyContent: 'center', gap: 1 }}>
-        <Button variant={viewMode === 'gacha' ? 'contained' : 'outlined'} onClick={() => setViewMode('gacha')}>
+        <Button
+          variant={viewMode === 'gacha' ? 'contained' : 'outlined'}
+          onClick={() => setViewMode('gacha')}
+        >
           ガチャ
         </Button>
-        <Button variant={viewMode === 'results' ? 'contained' : 'outlined'} onClick={() => setViewMode('results')}>
+        <Button
+          variant={viewMode === 'results' ? 'contained' : 'outlined'}
+          onClick={() => setViewMode('results')}
+        >
           全体結果
         </Button>
       </Box>
-      {viewMode === 'gacha' ? (
-        <GachaView />
-      ) : (
-        <ResultsView />
-      )}
+      {viewMode === 'gacha' ? <GachaView /> : <ResultsView />}
     </Container>
   );
 };

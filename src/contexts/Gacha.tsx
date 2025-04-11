@@ -10,17 +10,28 @@ type GachaContextType = {
   currentGachaId: string;
   setCurrentGachaId: (id: string) => void;
   createGacha: (name?: string) => Gacha;
-  retrieveGacha:(id: string) => Gacha | undefined;
+  retrieveGacha: (id: string) => Gacha | undefined;
   updateGacha: (updated: Gacha) => void;
   deleteGacha: (id: string) => void;
-  createItemInField: <K extends GachaListFields>(gachaId: string, field: K, item: Gacha[K][number]) => void;
-  retrieveItemInField: <K extends GachaListFields>(gachaId: string, field: K, itemId: string) => Gacha[K][number] | undefined;
-  updateItemInField: <K extends GachaListFields>(gachaId: string, field: K, item: Gacha[K][number]) => void;
+  createItemInField: <K extends GachaListFields>(
+    gachaId: string,
+    field: K,
+    item: Gacha[K][number],
+  ) => void;
+  retrieveItemInField: <K extends GachaListFields>(
+    gachaId: string,
+    field: K,
+    itemId: string,
+  ) => Gacha[K][number] | undefined;
+  updateItemInField: <K extends GachaListFields>(
+    gachaId: string,
+    field: K,
+    item: Gacha[K][number],
+  ) => void;
   deleteItemInField: <K extends GachaListFields>(gachaId: string, field: K, itemId: string) => void;
-}
+};
 
 const GachaContext = createContext<GachaContextType | undefined>(undefined);
-
 
 export const GachaProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [gachaList, setGachaList] = useState<Gacha[]>([]);
@@ -32,7 +43,10 @@ export const GachaProvider: React.FC<PropsWithChildren> = ({ children }) => {
     if (storedGachaList) {
       const parsedGachaList: Gacha[] = JSON.parse(storedGachaList);
       setGachaList(parsedGachaList);
-      if (storedCurrentGachaId && parsedGachaList.find(gacha => gacha.id === storedCurrentGachaId)) {
+      if (
+        storedCurrentGachaId &&
+        parsedGachaList.find(gacha => gacha.id === storedCurrentGachaId)
+      ) {
         setCurrentGachaId(storedCurrentGachaId);
       } else if (parsedGachaList.length > 0) {
         setCurrentGachaId(parsedGachaList[0].id);
@@ -56,7 +70,7 @@ export const GachaProvider: React.FC<PropsWithChildren> = ({ children }) => {
       targets: [{ id: uuidv4(), name: 'なし' }],
       categories: [{ id: 'none', name: 'なし' }],
       prizes: [],
-      operationHistory: []
+      operationHistory: [],
     };
     setGachaList(prev => [...prev, newGacha]);
     return newGacha;
@@ -74,64 +88,78 @@ export const GachaProvider: React.FC<PropsWithChildren> = ({ children }) => {
     setGachaList(prev => prev.filter(gacha => gacha.id !== id));
   };
 
-  const createItemInField = <K extends GachaListFields>(gachaId: string, field: K, item: Gacha[K][number]) => {
+  const createItemInField = <K extends GachaListFields>(
+    gachaId: string,
+    field: K,
+    item: Gacha[K][number],
+  ) => {
     const gacha = retrieveGacha(gachaId);
     if (!gacha) return;
 
     const updated: Gacha = {
       ...gacha,
-      [field]: [...gacha[field], item]
+      [field]: [...gacha[field], item],
     };
     updateGacha(updated);
   };
 
-  const retrieveItemInField = <K extends GachaListFields>(gachaId: string, field: K, itemId: string): Gacha[K][number] | undefined => {
+  const retrieveItemInField = <K extends GachaListFields>(
+    gachaId: string,
+    field: K,
+    itemId: string,
+  ): Gacha[K][number] | undefined => {
     const gacha = retrieveGacha(gachaId);
     if (!gacha) return undefined;
 
     return gacha[field].find(item => item.id === itemId);
   };
 
-  const updateItemInField = <K extends GachaListFields>(gachaId: string, field: K, item: Gacha[K][number]) => {
+  const updateItemInField = <K extends GachaListFields>(
+    gachaId: string,
+    field: K,
+    item: Gacha[K][number],
+  ) => {
     const gacha = retrieveGacha(gachaId);
     if (!gacha) return;
 
     const updated: Gacha = {
       ...gacha,
-      [field]: gacha[field].map(existing =>
-        existing.id === item.id ? item : existing
-      )
+      [field]: gacha[field].map(existing => (existing.id === item.id ? item : existing)),
     };
     updateGacha(updated);
   };
 
-  const deleteItemInField = <K extends GachaListFields>(gachaId: string, field: K, itemId: string) => {
+  const deleteItemInField = <K extends GachaListFields>(
+    gachaId: string,
+    field: K,
+    itemId: string,
+  ) => {
     const gacha = retrieveGacha(gachaId);
     if (!gacha) return;
 
     const updated: Gacha = {
       ...gacha,
-      [field]: gacha[field].filter(
-        item => item.id !== itemId
-      )
+      [field]: gacha[field].filter(item => item.id !== itemId),
     };
     updateGacha(updated);
   };
 
   return (
-    <GachaContext.Provider value={{
-      gachaList,
-      currentGachaId,
-      setCurrentGachaId,
-      createGacha,
-      retrieveGacha,
-      updateGacha,
-      deleteGacha,
-      createItemInField,
-      retrieveItemInField,
-      updateItemInField,
-      deleteItemInField,
-    }}>
+    <GachaContext.Provider
+      value={{
+        gachaList,
+        currentGachaId,
+        setCurrentGachaId,
+        createGacha,
+        retrieveGacha,
+        updateGacha,
+        deleteGacha,
+        createItemInField,
+        retrieveItemInField,
+        updateItemInField,
+        deleteItemInField,
+      }}
+    >
       {children}
     </GachaContext.Provider>
   );

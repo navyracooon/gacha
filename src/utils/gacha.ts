@@ -2,7 +2,7 @@ import { Gacha } from '../types/gacha';
 import { Operation } from '../types/operation';
 
 export class GachaUtils {
-  constructor (readonly gacha: Gacha) {}
+  constructor(readonly gacha: Gacha) {}
 
   private aggregateOperationHistory = (operationHistory: Operation[]) => {
     const aggregation: { [prizeId: string]: number } = {};
@@ -30,7 +30,7 @@ export class GachaUtils {
   // 対象者ごとの集計結果
   public getTargetAggregation = (targetId: string) => {
     const targetAggregation = this.aggregateOperationHistory(
-      this.gacha.operationHistory.filter(history => history.target === targetId)
+      this.gacha.operationHistory.filter(history => history.target === targetId),
     );
     return targetAggregation;
   };
