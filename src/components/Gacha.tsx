@@ -70,6 +70,21 @@ export const GachaView: React.FC = () => {
 
   const [isZeroVisible, setIsZeroVisible] = useState(false);
 
+  const [newCustomPrizeName, setNewCustomPrizeName] = useState<string>('');
+  const [newCustomPrizeWeight, setNewCustomPrizeWeight] = useState<string>('');
+  const [newCustomPrizeRelWeight, setNewCustomPrizeRelWeight] = useState<string>('');
+  const [newCustomPrizeLimit, setNewCustomPrizeLimit] = useState<string>('');
+  const [newCustomPrizeCategoryId, setNewCustomPrizeCategoryId] = useState<string>('none');
+  const [newCustomPrizeStartNumber, setNewCustomPrizeStartNumber] = useState<string>('');
+  const [newCustomPrizeEndNumber, setNewCustomPrizeEndNumber] = useState<string>('');
+  const [customAddDialogOpen, setCustomAddDialogOpen] = useState<boolean>(false);
+
+  const [newCustomDeletePrizeName, setNewCustomDeletePrizeName] = useState<string>('');
+  const [newCustomDeletePrizeStartNumber, setNewCustomDeletePrizeStartNumber] =
+    useState<string>('');
+  const [newCustomDeletePrizeEndNumber, setNewCustomDeletePrizeEndNumber] = useState<string>('');
+  const [customDeleteDialogOpen, setCustomDeleteDialogOpen] = useState<boolean>(false);
+
   const gachaUtils = new GachaUtils(currentGacha);
   const overallAggregation = gachaUtils.getOverallAggregation();
   const currentTargetAggregation = gachaUtils.getTargetAggregation(currentTargetId);
@@ -97,13 +112,83 @@ export const GachaView: React.FC = () => {
   const handleNewPrizeWeightChange = (weight: string) => {
     setNewPrizeWeight(weight);
     const parsedWeight = parseFloat(weight);
-    if (!isNaN(parsedWeight)) {
-      const relWeight =
-        totalWeight + parsedWeight > 0 ? (parsedWeight / (totalWeight + parsedWeight)) * 100 : 0;
-      setNewPrizeRelWeight(FormatUtils.toFixedWithoutZeros(relWeight, 4));
-    } else {
+    if (isNaN(parsedWeight)) {
       setNewPrizeRelWeight('');
+      return;
     }
+    const relWeight =
+      totalWeight + parsedWeight > 0 ? (parsedWeight / (totalWeight + parsedWeight)) * 100 : 0;
+    setNewPrizeRelWeight(FormatUtils.toFixedWithoutZeros(relWeight, 4));
+  };
+
+  const handleNewCustomPrizeWeightChange = (weight: string) => {
+    setNewCustomPrizeWeight(weight);
+    const parsedWeight = parseFloat(weight);
+    const parsedStartNumber = parseInt(newCustomPrizeStartNumber);
+    const parsedEndNumber = parseInt(newCustomPrizeEndNumber);
+    if (isNaN(parsedWeight) || isNaN(parsedStartNumber) || isNaN(parsedEndNumber)) {
+      setNewCustomPrizeRelWeight('');
+    } else {
+      const newTotalWeight = totalWeight + parsedWeight * (parsedEndNumber - parsedStartNumber + 1);
+      const relWeight = newTotalWeight > 0 ? (parsedWeight / newTotalWeight) * 100 : 0;
+      setNewCustomPrizeRelWeight(FormatUtils.toFixedWithoutZeros(relWeight, 4));
+    }
+  };
+
+  const handleCustomAddPrize = () => {
+    const parsedWeight = parseFloat(newCustomPrizeWeight);
+    const parsedLimit = !isNaN(parseInt(newCustomPrizeLimit))
+      ? parseInt(newCustomPrizeLimit)
+      : undefined;
+    const parsedStartNumber = parseInt(newCustomPrizeStartNumber);
+    const parsedEndNumber = parseInt(newCustomPrizeEndNumber);
+    if (
+      isNaN(parsedWeight) ||
+      isNaN(parsedStartNumber) ||
+      isNaN(parsedEndNumber) ||
+      parsedStartNumber > parsedEndNumber
+    )
+      return;
+
+    const additionalPrizes: Prize[] = Array.from(
+      { length: parsedEndNumber - parsedStartNumber + 1 },
+      (_, i): Prize => ({
+        id: uuidv4(),
+        name: `${newCustomPrizeName}${parsedStartNumber + i}`,
+        weight: parsedWeight,
+        limit: parsedLimit,
+        categoryId: newCustomPrizeCategoryId,
+      }),
+    );
+    updateGacha({ ...currentGacha, prizes: [...currentGacha.prizes, ...additionalPrizes] });
+
+    setNewCustomPrizeName('');
+    setNewCustomPrizeWeight('');
+    setNewCustomPrizeRelWeight('');
+    setNewCustomPrizeLimit('');
+    setNewCustomPrizeCategoryId('none');
+    setNewCustomPrizeStartNumber('');
+    setNewCustomPrizeEndNumber('');
+    setCustomAddDialogOpen(false);
+  };
+
+  const handleCustomDeletePrize = () => {
+    const parsedStartNumber = parseInt(newCustomDeletePrizeStartNumber);
+    const parsedEndNumber = parseInt(newCustomDeletePrizeEndNumber);
+    if (isNaN(parsedStartNumber) || isNaN(parsedEndNumber) || parsedStartNumber > parsedEndNumber)
+      return;
+
+    const targetPrizeNames = Array.from(
+      { length: parsedEndNumber - parsedStartNumber + 1 },
+      (_, i) => `${newCustomDeletePrizeName}${parsedStartNumber + i}`,
+    );
+    const newPrizes = currentGacha.prizes.filter(item => !targetPrizeNames.includes(item.name));
+    updateGacha({ ...currentGacha, prizes: newPrizes });
+
+    setNewCustomDeletePrizeName('');
+    setNewCustomDeletePrizeStartNumber('');
+    setNewCustomDeletePrizeEndNumber('');
+    setCustomDeleteDialogOpen(false);
   };
 
   const handleUpdatePrize = (prizeId: string, key: PrizeField, value: string) => {
@@ -144,7 +229,6 @@ export const GachaView: React.FC = () => {
       currentCounts[prize.id] = overallAggregation[prize.id] || 0;
     });
     const results: { [prizeId: string]: number } = {};
-
     for (let i = 0; i < count; i++) {
       const candidates = currentGacha.prizes.filter(prize => {
         if (prize.limit !== undefined) {
@@ -153,11 +237,9 @@ export const GachaView: React.FC = () => {
         return true;
       });
       if (candidates.length === 0) break;
-
       const rand = Math.random() * totalWeight;
       let cumulative = 0;
       let drawn: Prize | null = null;
-
       for (const prize of candidates) {
         cumulative += prize.weight;
         if (rand < cumulative) {
@@ -170,7 +252,6 @@ export const GachaView: React.FC = () => {
         currentCounts[drawn.id] += 1;
       }
     }
-
     const newHistory = {
       id: uuidv4(),
       count,
@@ -272,9 +353,20 @@ export const GachaView: React.FC = () => {
   return (
     <Box>
       <Box sx={{ my: 2 }}>
-        <Typography variant="h5" sx={{ mb: 1 }}>
-          新しい景品の追加
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h5">新しい景品の追加</Typography>
+          <Box>
+            <Button variant="outlined" onClick={() => setCategoryModalOpen(true)} sx={{ mr: 2 }}>
+              カテゴリ管理
+            </Button>
+            <Button variant="outlined" onClick={() => setCustomAddDialogOpen(true)} sx={{ mr: 2 }}>
+              カスタム追加
+            </Button>
+            <Button variant="outlined" onClick={() => setCustomDeleteDialogOpen(true)}>
+              カスタム削除
+            </Button>
+          </Box>
+        </Box>
         <Box
           sx={{
             mb: 1,
@@ -282,6 +374,7 @@ export const GachaView: React.FC = () => {
             justifyContent: 'flex-start',
             alignItems: 'center',
             gap: 2,
+            mt: 2,
           }}
         >
           <TextField
@@ -299,8 +392,8 @@ export const GachaView: React.FC = () => {
           <TextField
             label="相対確率 (%)"
             value={newPrizeRelWeight}
-            slotProps={{ input: { readOnly: true } }}
             fullWidth
+            slotProps={{ input: { readOnly: true } }}
           />
           <TextField
             label="上限"
@@ -322,14 +415,9 @@ export const GachaView: React.FC = () => {
               ))}
             </Select>
           </FormControl>
-          <Box sx={{ width: 800, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Button variant="outlined" onClick={() => setCategoryModalOpen(true)} fullWidth>
-              カテゴリ管理
-            </Button>
-            <Button variant="contained" onClick={handleAddPrize} fullWidth>
-              追加
-            </Button>
-          </Box>
+          <Button variant="contained" onClick={handleAddPrize}>
+            追加
+          </Button>
         </Box>
       </Box>
       <Box sx={{ my: 2 }}>
@@ -546,6 +634,114 @@ export const GachaView: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCategoryModalOpen(false)}>閉じる</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={customAddDialogOpen}
+        onClose={() => setCustomAddDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>カスタム追加</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="景品名"
+              value={newCustomPrizeName}
+              onChange={e => setNewCustomPrizeName(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="絶対確率 (%)"
+              value={newCustomPrizeWeight}
+              onChange={e => handleNewCustomPrizeWeightChange(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="相対確率 (%)"
+              value={newCustomPrizeRelWeight}
+              fullWidth
+              slotProps={{ input: { readOnly: true } }}
+            />
+            <TextField
+              label="上限"
+              value={newCustomPrizeLimit}
+              onChange={e => setNewCustomPrizeLimit(e.target.value)}
+              fullWidth
+            />
+            <FormControl fullWidth>
+              <InputLabel>カテゴリ</InputLabel>
+              <Select
+                label="カテゴリ"
+                value={newCustomPrizeCategoryId}
+                onChange={e => setNewCustomPrizeCategoryId(e.target.value)}
+              >
+                {currentGacha.categories.map(category => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="開始番号"
+              value={newCustomPrizeStartNumber}
+              onChange={e => setNewCustomPrizeStartNumber(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="終了番号"
+              value={newCustomPrizeEndNumber}
+              onChange={e => setNewCustomPrizeEndNumber(e.target.value)}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" onClick={handleCustomAddPrize}>
+            追加
+          </Button>
+          <Button variant="outlined" onClick={() => setCustomAddDialogOpen(false)}>
+            閉じる
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={customDeleteDialogOpen}
+        onClose={() => setCustomDeleteDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>カスタム削除</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="景品名"
+              value={newCustomDeletePrizeName}
+              onChange={e => setNewCustomDeletePrizeName(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="開始番号"
+              value={newCustomDeletePrizeStartNumber}
+              onChange={e => setNewCustomDeletePrizeStartNumber(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="終了番号"
+              value={newCustomDeletePrizeEndNumber}
+              onChange={e => setNewCustomDeletePrizeEndNumber(e.target.value)}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" onClick={handleCustomDeletePrize}>
+            削除
+          </Button>
+          <Button variant="outlined" onClick={() => setCustomDeleteDialogOpen(false)}>
+            閉じる
+          </Button>
         </DialogActions>
       </Dialog>
       <Box sx={{ my: 2 }}>
