@@ -7,4 +7,3 @@ export type Prize = {
   limit?: number;
   categoryId: string;
 };
-

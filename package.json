@@ -6,16 +6,21 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "format": "prettier --write .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.8",
     "@mui/material": "^6.4.8",
+    "memoize-one": "^6.0.0",
     "next": "15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.55.0",
+    "react-virtuoso": "^4.12.6",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -23,8 +28,12 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-window": "^1.8.8",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
+    "eslint-config-prettier": "^10.1.2",
+    "husky": "^9.1.7",
+    "prettier": "^3.5.3",
     "typescript": "^5"
   }
 }

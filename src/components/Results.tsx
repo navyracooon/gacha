@@ -1,141 +1,91 @@
-import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+'use client';
 
+import { useState } from 'react';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  IconButton,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { ExpandMore, Visibility, VisibilityOff } from '@mui/icons-material';
+
+import { AggregationTable } from './AggregationTable';
+import { OperationHistoryBox } from './OperationHistoryBox';
 import { useGachaContext } from '../contexts/Gacha';
 import { GachaUtils } from '../utils/gacha';
 
 export const ResultsView: React.FC = () => {
-  const { gachaList, currentGachaId, retrieveGacha, retrieveItemInField } = useGachaContext();
+  const { gachaList, currentGachaId, retrieveGacha } = useGachaContext();
   const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
+
+  const [isZeroVisible, setIsZeroVisible] = useState(true);
+  const [isTargetZeroVisible, setIsTargetZeroVisible] = useState(false);
 
   const gachaUtils = new GachaUtils(currentGacha);
   const overallAggregation = gachaUtils.getOverallAggregation();
-  const totalWeight = gachaUtils.getTotalPrizeWeight();
 
   return (
     <Box>
-      <Typography variant="h5">全体の結果</Typography>
-      <TableContainer component={Paper} sx={{ my: 2 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>景品名</TableCell>
-              <TableCell>絶対確率 (%)</TableCell>
-              <TableCell>相対確率 (%)</TableCell>
-              <TableCell>個数</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {currentGacha.prizes.map(prize => (
-              <TableRow key={prize.id}>
-                <TableCell>{prize.name}</TableCell>
-                <TableCell>{prize.weight}</TableCell>
-                <TableCell>
-                  {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
-                </TableCell>
-                <TableCell>{overallAggregation[prize.id] || 0}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Accordion defaultExpanded={false}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5">全体の結果</Typography>
+        <Tooltip title="個数が0の景品を非表示にする" placement="top">
+          <IconButton onClick={() => setIsZeroVisible(!isZeroVisible)}>
+            {isZeroVisible ? <Visibility /> : <VisibilityOff />}
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <AggregationTable aggregation={overallAggregation} isZeroVisible={isZeroVisible} />
+      <Accordion defaultExpanded={false} sx={{ mt: 2 }}>
+        <AccordionSummary expandIcon={<ExpandMore />}>
           <Typography variant="subtitle2">全体の操作履歴</Typography>
         </AccordionSummary>
         <AccordionDetails>
           {currentGacha.operationHistory
-            .slice().sort((a, b) => b.timestamp - a.timestamp)
+            .slice()
+            .sort((a, b) => b.timestamp - a.timestamp)
             .map(history => (
-            <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
-              <Typography>
-                実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
-                対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
-              </Typography>
-              {Object.keys(history.results).map(prizeId => {
-                const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
-                return prize ? (
-                  <Typography key={prizeId}>
-                    {prize.name}: {history.results[prizeId]}回
-                  </Typography>
-                ) : null;
-              })}
-            </Box>
-          ))}
+              <OperationHistoryBox key={history.id} operationHistory={history} />
+            ))}
         </AccordionDetails>
       </Accordion>
-      <Typography variant="h5" sx={{ mt: 2 }}>各対象者の結果</Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5" sx={{ mt: 2 }}>
+          各対象者の結果
+        </Typography>
+        <Tooltip title="個数が0の景品を非表示にする" placement="top">
+          <IconButton onClick={() => setIsTargetZeroVisible(!isTargetZeroVisible)}>
+            {isTargetZeroVisible ? <Visibility /> : <VisibilityOff />}
+          </IconButton>
+        </Tooltip>
+      </Box>
       {currentGacha.targets.map(target => {
         const targetAggregation = gachaUtils.getTargetAggregation(target.id);
 
         return (
-          <Accordion key={target.id} defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Accordion key={target.id} defaultExpanded sx={{ mt: 2 }}>
+            <AccordionSummary expandIcon={<ExpandMore />}>
               <Typography variant="h6">{target.name}</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="subtitle1">集計結果</Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>景品名</TableCell>
-                      <TableCell>絶対確率 (%)</TableCell>
-                      <TableCell>相対確率 (%)</TableCell>
-                      <TableCell>個数</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {currentGacha.prizes.map(prize => (
-                      <TableRow key={prize.id}>
-                        <TableCell>{prize.name}</TableCell>
-                        <TableCell>{prize.weight}</TableCell>
-                        <TableCell>
-                          {totalWeight > 0 ? ((prize.weight / totalWeight) * 100).toFixed(2) : '0.00'}
-                        </TableCell>
-                        <TableCell>{targetAggregation[prize.id] || 0}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <AggregationTable
+                aggregation={targetAggregation}
+                isZeroVisible={isTargetZeroVisible}
+              />
               <Accordion defaultExpanded={false} sx={{ mt: 2 }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <AccordionSummary expandIcon={<ExpandMore />}>
                   <Typography variant="subtitle2">操作履歴</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   {currentGacha.operationHistory
                     .filter(history => history.target === target.id)
-                    .slice().sort((a, b) => b.timestamp - a.timestamp)
+                    .slice()
+                    .sort((a, b) => b.timestamp - a.timestamp)
                     .map(history => (
-                    <Box key={history.id} sx={{ border: '1px solid #ccc', p: 1, mb: 1, borderRadius: '4px' }}>
-                      <Typography>
-                        実行日時: {new Date(history.timestamp).toLocaleString()} - {history.count}回実行 -
-                        対象者: {retrieveItemInField(currentGachaId, 'targets', history.target)?.name || 'なし'}
-                      </Typography>
-                      {Object.keys(history.results).map(prizeId => {
-                        const prize = retrieveItemInField(currentGachaId, 'prizes', prizeId);
-                        return prize ? (
-                          <Typography key={prizeId}>
-                            {prize.name}: {history.results[prizeId]}回
-                          </Typography>
-                        ) : null;
-                      })}
-                    </Box>
-                  ))}
+                      <OperationHistoryBox key={history.id} operationHistory={history} />
+                    ))}
                 </AccordionDetails>
               </Accordion>
             </AccordionDetails>
@@ -145,4 +95,3 @@ export const ResultsView: React.FC = () => {
     </Box>
   );
 };
-

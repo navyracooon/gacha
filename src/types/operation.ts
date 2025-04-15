@@ -5,4 +5,3 @@ export type Operation = {
   timestamp: number;
   target: string;
 };
-

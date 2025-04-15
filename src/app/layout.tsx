@@ -14,9 +14,7 @@ const RootLayout: React.FC<PropsWithChildren> = ({ children }) => {
         <meta name="description" content="配信者さん用ガチャシミュレーター" />
       </head>
       <body>
-        <RootProvider>
-          {children}
-        </RootProvider>
+        <RootProvider>{children}</RootProvider>
       </body>
     </html>
   );

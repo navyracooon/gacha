@@ -11,4 +11,3 @@ export const CustomSortIcon = (props: { active?: boolean; direction?: 'asc' | 'd
     return <SwapVert fontSize="small" style={style} />;
   }
 };
-
