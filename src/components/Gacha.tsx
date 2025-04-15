@@ -205,42 +205,35 @@ export const GachaView: React.FC = () => {
           </Button>
         </Box>
       </Box>
-      <Box sx={{ my: 2 }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h5" sx={{ mb: 1 }}>
           景品設定
         </Typography>
         <PrizeTable />
       </Box>
-      <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel>対象者</InputLabel>
-          <Select
-            value={currentTargetId}
-            label="対象者"
-            onChange={e => setCurrentTargetId(e.target.value)}
-          >
-            {currentGacha.targets.map(target => (
-              <MenuItem key={target.id} value={target.id}>
-                {target.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <Button variant="outlined" onClick={() => setIsTargetDialogOpen(true)}>
-          対象者管理
-        </Button>
-      </Box>
-      <TargetDialog isOpen={isTargetDialogOpen} setIsOpen={setIsTargetDialogOpen} />
-      <CategoryDialog isOpen={isCategoryDialogOpen} setIsOpen={setIsCategoryDialogOpen} />
-      <CustomAddDialog isOpen={isCustomAddDialogOpen} setIsOpen={setIsCustomAddDialogOpen} />
-      <CustomDeleteDialog
-        isOpen={isCustomDeleteDialogOpen}
-        setIsOpen={setIsCustomDeleteDialogOpen}
-      />
       <Box sx={{ my: 2 }}>
         <Typography variant="h5" sx={{ mb: 2 }}>
           ガチャを回す
         </Typography>
+        <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FormControl sx={{ minWidth: 120 }}>
+            <InputLabel>対象者</InputLabel>
+            <Select
+              value={currentTargetId}
+              label="対象者"
+              onChange={e => setCurrentTargetId(e.target.value)}
+            >
+              {currentGacha.targets.map(target => (
+                <MenuItem key={target.id} value={target.id}>
+                  {target.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button variant="outlined" onClick={() => setIsTargetDialogOpen(true)}>
+            対象者管理
+          </Button>
+        </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 2 }}>
           <TextField
             label="回数指定"
@@ -304,6 +297,13 @@ export const GachaView: React.FC = () => {
             <OperationHistoryBox key={history.id} operationHistory={history} />
           ))}
       </Box>
+      <TargetDialog isOpen={isTargetDialogOpen} setIsOpen={setIsTargetDialogOpen} />
+      <CategoryDialog isOpen={isCategoryDialogOpen} setIsOpen={setIsCategoryDialogOpen} />
+      <CustomAddDialog isOpen={isCustomAddDialogOpen} setIsOpen={setIsCustomAddDialogOpen} />
+      <CustomDeleteDialog
+        isOpen={isCustomDeleteDialogOpen}
+        setIsOpen={setIsCustomDeleteDialogOpen}
+      />
     </Box>
   );
 };
