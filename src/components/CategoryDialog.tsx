@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
   Box,
   Button,
@@ -20,9 +20,12 @@ type Props = {
   setIsOpen: (value: boolean) => void;
 };
 
+type FormData = {
+  newCategoryName: string;
+};
+
 export const CategoryDialog = (props: Props) => {
   const { isOpen, setIsOpen } = props;
-
   const {
     gachaList,
     currentGachaId,
@@ -33,13 +36,22 @@ export const CategoryDialog = (props: Props) => {
   } = useGachaContext();
   const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
 
-  const [newCategoryName, setNewCategoryName] = useState<string>('');
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>({
+    defaultValues: { newCategoryName: '' },
+  });
 
-  const handleAddCategory = () => {
-    if (!newCategoryName.trim()) return;
-    const newCategory: Category = { id: uuidv4(), name: newCategoryName.trim() };
-    createItemInField(currentGachaId, 'categories', newCategory);
-    setNewCategoryName('');
+  const onSubmit = (data: FormData) => {
+    const trimmed = data.newCategoryName.trim();
+    if (trimmed) {
+      const newCategory: Category = { id: uuidv4(), name: trimmed };
+      createItemInField(currentGachaId, 'categories', newCategory);
+    }
+    reset();
   };
 
   return (
@@ -58,14 +70,14 @@ export const CategoryDialog = (props: Props) => {
                     name: e.target.value,
                   })
                 }
-                slotProps={{ input: { readOnly: category.id !== 'none' ? false : true } }}
+                slotProps={{ input: { readOnly: category.id === 'none' } }}
                 fullWidth
               />
               <Button
                 variant="outlined"
                 color="error"
                 onClick={() => deleteItemInField(currentGachaId, 'categories', category.id)}
-                sx={{ visibility: category.id !== 'none' ? 'visible' : 'hidden' }}
+                sx={{ visibility: category.id === 'none' ? 'hidden' : 'visible' }}
               >
                 削除
               </Button>
@@ -73,15 +85,18 @@ export const CategoryDialog = (props: Props) => {
           ))}
         </Box>
         <Box sx={{ mt: 3 }}>
-          <TextField
-            label="新規カテゴリ名"
-            value={newCategoryName}
-            onChange={e => setNewCategoryName(e.target.value)}
-            fullWidth
-          />
-          <Button variant="contained" onClick={handleAddCategory} sx={{ mt: 1 }}>
-            追加
-          </Button>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <TextField
+              label="新規カテゴリ名"
+              fullWidth
+              {...register('newCategoryName', { required: 'カテゴリ名を入力してください' })}
+              error={!!errors.newCategoryName}
+              helperText={errors.newCategoryName?.message}
+            />
+            <Button variant="contained" type="submit" sx={{ mt: 1 }}>
+              追加
+            </Button>
+          </form>
         </Box>
       </DialogContent>
       <DialogActions>

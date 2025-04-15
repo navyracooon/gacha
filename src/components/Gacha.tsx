@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import {
   Box,
   Button,
@@ -28,6 +29,13 @@ import { Prize } from '../types/prize';
 import { FormatUtils } from '../utils/format';
 import { GachaUtils } from '../utils/gacha';
 
+type PrizeFormData = {
+  prizeName: string;
+  prizeWeight: string;
+  prizeLimit: string;
+  prizeCategoryId: string;
+};
+
 export const GachaView: React.FC = () => {
   const {
     gachaList,
@@ -39,18 +47,51 @@ export const GachaView: React.FC = () => {
   } = useGachaContext();
   const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
 
-  const [newPrizeName, setNewPrizeName] = useState<string>('');
-  const [newPrizeWeight, setNewPrizeWeight] = useState<string>('');
-  const [newPrizeRelWeight, setNewPrizeRelWeight] = useState<string>('');
-  const [newPrizeLimit, setNewPrizeLimit] = useState<string>('');
-  const [newPrizeCategoryId, setNewPrizeCategoryId] = useState<string>('none');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<PrizeFormData>({
+    defaultValues: {
+      prizeName: '',
+      prizeWeight: '',
+      prizeLimit: '',
+      prizeCategoryId: 'none',
+    },
+  });
+
+  const watchPrizeWeight = watch('prizeWeight');
+  const totalWeight = new GachaUtils(currentGacha).getTotalPrizeWeight();
+  let computedPrizeRelWeight = '';
+  const parsedWeight = parseFloat(watchPrizeWeight);
+  if (!isNaN(parsedWeight)) {
+    computedPrizeRelWeight =
+      totalWeight + parsedWeight > 0
+        ? FormatUtils.toFixedWithoutZeros((parsedWeight / (totalWeight + parsedWeight)) * 100, 4)
+        : '0';
+  }
+
+  const onSubmitPrize = (data: PrizeFormData) => {
+    const parsedWeight = parseFloat(data.prizeWeight);
+    if (isNaN(parsedWeight)) return;
+    const parsedLimit = !isNaN(parseInt(data.prizeLimit)) ? parseInt(data.prizeLimit) : undefined;
+    const newPrize: Prize = {
+      id: uuidv4(),
+      name: data.prizeName,
+      weight: parsedWeight,
+      limit: parsedLimit,
+      categoryId: data.prizeCategoryId,
+    };
+    createItemInField(currentGachaId, 'prizes', newPrize);
+    reset();
+  };
 
   const [customGachaCount, setCustomGachaCount] = useState<string>('1');
-
   const [currentTargetId, setCurrentTargetId] = useState<string>(currentGacha.targets[0]?.id);
-
   const [isZeroVisible, setIsZeroVisible] = useState(false);
-
   const [isTargetDialogOpen, setIsTargetDialogOpen] = useState<boolean>(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState<boolean>(false);
   const [isCustomAddDialogOpen, setIsCustomAddDialogOpen] = useState<boolean>(false);
@@ -59,38 +100,6 @@ export const GachaView: React.FC = () => {
   const gachaUtils = new GachaUtils(currentGacha);
   const overallAggregation = gachaUtils.getOverallAggregation();
   const currentTargetAggregation = gachaUtils.getTargetAggregation(currentTargetId);
-  const totalWeight = gachaUtils.getTotalPrizeWeight();
-
-  const handleAddPrize = () => {
-    const parsedWeight = parseFloat(newPrizeWeight);
-    if (!newPrizeName || isNaN(parsedWeight)) return;
-    const parsedLimit = !isNaN(parseInt(newPrizeLimit)) ? parseInt(newPrizeLimit) : undefined;
-    const newPrize: Prize = {
-      id: uuidv4(),
-      name: newPrizeName,
-      weight: parsedWeight,
-      limit: parsedLimit,
-      categoryId: newPrizeCategoryId,
-    };
-    createItemInField(currentGachaId, 'prizes', newPrize);
-    setNewPrizeName('');
-    setNewPrizeWeight('');
-    setNewPrizeRelWeight('');
-    setNewPrizeLimit('');
-    setNewPrizeCategoryId('none');
-  };
-
-  const handleNewPrizeWeightChange = (weight: string) => {
-    setNewPrizeWeight(weight);
-    const parsedWeight = parseFloat(weight);
-    if (isNaN(parsedWeight)) {
-      setNewPrizeRelWeight('');
-      return;
-    }
-    const relWeight =
-      totalWeight + parsedWeight > 0 ? (parsedWeight / (totalWeight + parsedWeight)) * 100 : 0;
-    setNewPrizeRelWeight(FormatUtils.toFixedWithoutZeros(relWeight, 4));
-  };
 
   const handleGachaPull = (count: number) => {
     const currentCounts: { [prizeId: string]: number } = {};
@@ -152,57 +161,70 @@ export const GachaView: React.FC = () => {
             </Button>
           </Box>
         </Box>
-        <Box
-          sx={{
-            mb: 1,
-            display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-            gap: 2,
-            mt: 2,
-          }}
-        >
-          <TextField
-            label="景品名"
-            value={newPrizeName}
-            onChange={e => setNewPrizeName(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="絶対確率 (%)"
-            value={newPrizeWeight}
-            onChange={e => handleNewPrizeWeightChange(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="相対確率 (%)"
-            value={newPrizeRelWeight}
-            fullWidth
-            slotProps={{ input: { readOnly: true } }}
-          />
-          <TextField
-            label="上限"
-            value={newPrizeLimit}
-            onChange={e => setNewPrizeLimit(e.target.value)}
-            fullWidth
-          />
-          <FormControl fullWidth>
-            <InputLabel>カテゴリ</InputLabel>
-            <Select
-              value={newPrizeCategoryId}
-              label="カテゴリ"
-              onChange={e => setNewPrizeCategoryId(e.target.value)}
-            >
-              {currentGacha.categories.map(category => (
-                <MenuItem key={category.id} value={category.id}>
-                  {category.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button variant="contained" onClick={handleAddPrize}>
-            追加
-          </Button>
+        <Box sx={{ mb: 1, mt: 2 }}>
+          <form
+            onSubmit={handleSubmit(onSubmitPrize)}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <TextField
+              label="景品名"
+              {...register('prizeName', { required: '景品名は必須です' })}
+              error={!!errors.prizeName}
+              helperText={errors.prizeName?.message}
+              sx={{ width: 160 }}
+            />
+            <TextField
+              label="絶対確率 (%)"
+              {...register('prizeWeight', {
+                required: '絶対確率は必須です',
+                validate: value => !isNaN(parseFloat(value)) || '数値を入力してください',
+              })}
+              error={!!errors.prizeWeight}
+              helperText={errors.prizeWeight?.message}
+              sx={{ width: 128 }}
+            />
+            <TextField
+              label="相対確率 (%)"
+              value={computedPrizeRelWeight}
+              slotProps={{ input: { readOnly: true } }}
+              sx={{ width: 128 }}
+            />
+            <TextField
+              label="上限"
+              {...register('prizeLimit', {
+                validate: value =>
+                  value === '' || !isNaN(parseInt(value)) || '数値を入力してください',
+              })}
+              error={!!errors.prizeLimit}
+              helperText={errors.prizeLimit?.message}
+              sx={{ width: 128 }}
+            />
+            <Controller
+              name="prizeCategoryId"
+              control={control}
+              rules={{ required: 'カテゴリは必須です' }}
+              render={({ field }) => (
+                <FormControl sx={{ width: 128 }} error={!!errors.prizeCategoryId}>
+                  <InputLabel>カテゴリ</InputLabel>
+                  <Select {...field} label="カテゴリ">
+                    {currentGacha.categories.map(category => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            />
+            <Button variant="contained" type="submit" sx={{ height: 40, width: 128 }}>
+              追加
+            </Button>
+          </form>
         </Box>
       </Box>
       <Box sx={{ mb: 2 }}>

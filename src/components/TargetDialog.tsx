@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
   Box,
   Button,
@@ -20,9 +21,12 @@ type Props = {
   setIsOpen: (value: boolean) => void;
 };
 
+type FormData = {
+  newTargetName: string;
+};
+
 export const TargetDialog = (props: Props) => {
   const { isOpen, setIsOpen } = props;
-
   const {
     gachaList,
     currentGachaId,
@@ -33,15 +37,23 @@ export const TargetDialog = (props: Props) => {
   } = useGachaContext();
   const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
 
-  const [currentTargetId, setCurrentTargetId] = useState<string>(currentGacha.targets[0]?.id);
-  const [newTargetName, setNewTargetName] = useState<string>('');
+  const [currentTargetId, setCurrentTargetId] = useState<string>(currentGacha.targets[0]?.id || '');
 
-  const handleAddTarget = () => {
-    if (!newTargetName.trim()) return;
-    const newTarget: Target = { id: uuidv4(), name: newTargetName.trim() };
-    createItemInField(currentGachaId, 'targets', newTarget);
-    setCurrentTargetId(newTarget.id);
-    setNewTargetName('');
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>({ defaultValues: { newTargetName: '' } });
+
+  const onSubmit = (data: FormData) => {
+    const trimmed = data.newTargetName.trim();
+    if (trimmed) {
+      const newTarget: Target = { id: uuidv4(), name: trimmed };
+      createItemInField(currentGachaId, 'targets', newTarget);
+      setCurrentTargetId(newTarget.id);
+    }
+    reset();
   };
 
   const handleUpdateTargetName = (targetId: string, name: string) => {
@@ -97,15 +109,18 @@ export const TargetDialog = (props: Props) => {
           ))}
         </Box>
         <Box sx={{ mt: 3 }}>
-          <TextField
-            label="新規対象者名"
-            value={newTargetName}
-            onChange={e => setNewTargetName(e.target.value)}
-            fullWidth
-          />
-          <Button variant="contained" onClick={handleAddTarget} sx={{ mt: 1 }}>
-            追加
-          </Button>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <TextField
+              label="新規対象者名"
+              fullWidth
+              {...register('newTargetName', { required: '新規対象者名を入力してください' })}
+              error={!!errors.newTargetName}
+              helperText={errors.newTargetName?.message}
+            />
+            <Button variant="contained" type="submit" sx={{ mt: 1 }}>
+              追加
+            </Button>
+          </form>
         </Box>
       </DialogContent>
       <DialogActions>
