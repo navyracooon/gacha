@@ -100,7 +100,7 @@ export const CustomDeleteDialog = (props: Props) => {
             削除
           </Button>
           <Button
-            variant="outlined"
+            variant="text"
             onClick={() => {
               reset();
               setIsOpen(false);

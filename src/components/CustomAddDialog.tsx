@@ -194,7 +194,7 @@ export const CustomAddDialog = (props: Props) => {
             追加
           </Button>
           <Button
-            variant="outlined"
+            variant="text"
             onClick={() => {
               reset();
               setIsOpen(false);

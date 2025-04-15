@@ -143,7 +143,7 @@ export const GachaView: React.FC = () => {
   return (
     <Box>
       <Box sx={{ my: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography variant="h5">新しい景品の追加</Typography>
           <Box>
             <Button variant="outlined" onClick={() => setIsCategoryDialogOpen(true)} sx={{ mr: 2 }}>
@@ -168,48 +168,46 @@ export const GachaView: React.FC = () => {
               display: 'flex',
               flexDirection: 'row',
               justifyContent: 'space-between',
-              alignItems: 'center',
             }}
           >
             <TextField
               label="景品名"
-              {...register('prizeName', { required: '景品名は必須です' })}
+              {...register('prizeName', { required: '必須' })}
               error={!!errors.prizeName}
               helperText={errors.prizeName?.message}
-              sx={{ width: 160 }}
+              sx={{ width: 152 }}
             />
             <TextField
               label="絶対確率 (%)"
               {...register('prizeWeight', {
-                required: '絶対確率は必須です',
-                validate: value => !isNaN(parseFloat(value)) || '数値を入力してください',
+                required: '必須',
+                validate: value => !isNaN(parseFloat(value)) || '数値を入力',
               })}
               error={!!errors.prizeWeight}
               helperText={errors.prizeWeight?.message}
-              sx={{ width: 128 }}
+              sx={{ width: 136 }}
             />
             <TextField
               label="相対確率 (%)"
               value={computedPrizeRelWeight}
               slotProps={{ input: { readOnly: true } }}
-              sx={{ width: 128 }}
+              sx={{ width: 136 }}
             />
             <TextField
               label="上限"
               {...register('prizeLimit', {
-                validate: value =>
-                  value === '' || !isNaN(parseInt(value)) || '数値を入力してください',
+                validate: value => value === '' || !isNaN(parseInt(value)) || '数値を入力',
               })}
               error={!!errors.prizeLimit}
               helperText={errors.prizeLimit?.message}
-              sx={{ width: 128 }}
+              sx={{ width: 120 }}
             />
             <Controller
               name="prizeCategoryId"
               control={control}
               rules={{ required: 'カテゴリは必須です' }}
               render={({ field }) => (
-                <FormControl sx={{ width: 128 }} error={!!errors.prizeCategoryId}>
+                <FormControl sx={{ width: 136 }} error={!!errors.prizeCategoryId}>
                   <InputLabel>カテゴリ</InputLabel>
                   <Select {...field} label="カテゴリ">
                     {currentGacha.categories.map(category => (
@@ -221,7 +219,7 @@ export const GachaView: React.FC = () => {
                 </FormControl>
               )}
             />
-            <Button variant="contained" type="submit" sx={{ height: 40, width: 128 }}>
+            <Button variant="contained" type="submit" sx={{ height: 36, width: 136, mt: 1 }}>
               追加
             </Button>
           </form>

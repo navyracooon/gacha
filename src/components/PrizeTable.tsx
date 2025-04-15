@@ -67,7 +67,7 @@ export const PrizeTable = () => {
   const gachaUtils = new GachaUtils(currentGacha);
   const totalWeight = gachaUtils.getTotalPrizeWeight();
 
-  const tableHeight = currentGacha.prizes.length > 6 ? 640 : 60 + currentGacha.prizes.length * 89;
+  const tableHeight = currentGacha.prizes.length > 6 ? 640 : 61 + currentGacha.prizes.length * 89;
 
   const sortedPrizes = useMemo(() => {
     if (isEditing) return currentGacha.prizes;
