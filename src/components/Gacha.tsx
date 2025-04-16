@@ -146,13 +146,13 @@ export const GachaView: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography variant="h5">新しい景品の追加</Typography>
           <Box>
-            <Button variant="outlined" onClick={() => setIsCategoryDialogOpen(true)} sx={{ mr: 2 }}>
+            <Button variant="outlined" onClick={() => setIsCategoryDialogOpen(true)} sx={{ mr: 1 }}>
               カテゴリ管理
             </Button>
             <Button
               variant="outlined"
               onClick={() => setIsCustomAddDialogOpen(true)}
-              sx={{ mr: 2 }}
+              sx={{ mr: 1 }}
             >
               カスタム追加
             </Button>
