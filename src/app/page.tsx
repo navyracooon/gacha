@@ -2,23 +2,20 @@
 
 import { useState } from 'react';
 import {
+  Container,
   Box,
   Button,
-  Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
   TextField,
   Typography,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
-import Confetti from 'react-dom-confetti';
-import { Campaign } from '@mui/icons-material';
 
 import { GachaView } from '../components/Gacha';
 import { ResultsView } from '../components/Results';
@@ -37,7 +34,6 @@ const Page = () => {
   const [newGachaName, setNewGachaName] = useState<string>('');
   const [addGachaModalOpen, setAddGachaModalOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'gacha' | 'results'>('gacha');
-  const [isConfettiActive, setIsConfettiActive] = useState(false);
 
   const handleAddGacha = () => {
     const newGacha = createGacha(newGachaName);
@@ -62,11 +58,6 @@ const Page = () => {
   const handleAddGachaModal = () => {
     handleAddGacha();
     setAddGachaModalOpen(false);
-  };
-
-  const handleConfettiButton = () => {
-    setIsConfettiActive(true);
-    setTimeout(() => setIsConfettiActive(false), 3000);
   };
 
   const currentGacha = retrieveGacha(currentGachaId) || gachaList[0];
@@ -103,26 +94,8 @@ const Page = () => {
 
   return (
     <Container maxWidth="md">
-      <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ my: 2 }}>
         <Typography variant="h4">ガチャシミュレーター</Typography>
-        <IconButton onClick={handleConfettiButton}>
-          <Campaign color="warning" />
-        </IconButton>
-        <Confetti
-          active={isConfettiActive}
-          config={{
-            angle: 0,
-            spread: 360,
-            startVelocity: 70,
-            elementCount: 300,
-            dragFriction: 0.12,
-            duration: 3000,
-            stagger: 3,
-            width: '10px',
-            height: '10px',
-            colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'],
-          }}
-        />
       </Box>
       <Box sx={{ my: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
         <FormControl sx={{ flex: 1 }}>
